@@ -1,0 +1,7 @@
+{
+  "extends": "@cashpilot/config/tsconfig/next.json",
+  "compilerOptions": {
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src", "next-env.d.ts"]
+}

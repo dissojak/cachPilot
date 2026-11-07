@@ -1,0 +1,23 @@
+{
+  "name": "@cashpilot/infra",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cashpilot/application": "workspace:*",
+    "@cashpilot/domain": "workspace:*",
+    "@cashpilot/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@cashpilot/config": "workspace:*",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}

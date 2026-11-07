@@ -1,0 +1,22 @@
+{
+  "name": "@cashpilot/application",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ports": "./src/ports/index.ts"
+  },
+  "dependencies": {
+    "@cashpilot/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@cashpilot/config": "workspace:*",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}

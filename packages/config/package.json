@@ -1,0 +1,21 @@
+{
+  "name": "@cashpilot/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tsconfig/*": "./tsconfig/*",
+    "./eslint/*": "./eslint/*",
+    "./tailwind/*": "./tailwind/*"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

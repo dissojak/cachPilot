@@ -1,0 +1,17 @@
+{
+  "name": "cashpilot",
+  "private": true,
+  "packageManager": "pnpm@11.22.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "depcruise": "depcruise"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "dependency-cruiser": "^16.0.0"
+  }
+}

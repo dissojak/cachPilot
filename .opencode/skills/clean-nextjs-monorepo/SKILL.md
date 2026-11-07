@@ -181,7 +181,17 @@ Whatever the idea: name ports in business language, keep state machines in entit
 - Floating-point money; hidden `new Date()` inside domain logic without a parameter or `Clock` port.
 - Disabling lint, TypeScript strictness or depcruise rules to get green.
 
-## 13. How to talk to the user
+## 14. Separation of concerns (data, utils, hooks)
+
+Keep code split by responsibility and layer. Do not put everything in one file or folder.
+
+- Data access and fetching live in repositories/adapters (`packages/infra`, `packages/db`), never in components or hooks.
+- Hooks are presentation-only (`apps/web`): UI state, form state, local interaction. They call use cases; they do not contain business rules or direct DB calls.
+- Utils are small, pure, generic helpers. They must not contain domain rules, authorization, money calculations, or data fetching.
+- Feature code should be grouped by business concept (invoices, expenses, forecast), not only by technical type.
+- Shared UI goes in `packages/ui`; app-specific UI goes in `apps/web/src/components`.
+
+This does not break the architecture if respected. It breaks the architecture if utils/hooks become dumping grounds or bypass use cases/repositories.
 - Before creating files, state in one sentence which layer/package they belong to and why.
 - If a request would break the dependency rule, say so, propose the compliant alternative (usually a new port + adapter), and proceed with that.
 - Keep each step small enough to review; end with the checks you ran and the proposed next step.
