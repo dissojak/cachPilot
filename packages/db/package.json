@@ -6,10 +6,13 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "mongoose": "^8.0.0"
+  },
   "devDependencies": {
     "@cashpilot/config": "workspace:*",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

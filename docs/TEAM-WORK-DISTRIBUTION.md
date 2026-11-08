@@ -44,7 +44,17 @@ Approximate totals:
 - Teammate B: 20%
 - Teammate C: 20%
 
-## Coordination rules
+## Execution order
+
+Work is sequential by ownership, not parallel:
+
+1. Adem completes their 60% first.
+2. Teammate B starts only after Adem reaches 60%.
+3. Teammate C starts only after Teammate B reaches their 20%.
+4. No one waits idle: when one person finishes their share, the next person starts immediately.
+5. Shared work (tests, CI, README) is done by whoever is active at that point, with Adem reviewing.
+
+This means Adem owns the foundation and critical slices first; teammates then extend the already-prepared base.
 
 - Adem owns the shared schema, ports and core money/payment rules. Teammates should extend these, not recreate them.
 - Each feature owner implements the full vertical slice: domain, use cases, infra, UI, tests.
