@@ -84,3 +84,5 @@ echo done
 - Adem: README, Playwright smoke test, and Vercel config added.
 
 - Adem: fixed sign-in flow (v5 server action), PDF export auth guard, and tsbuildinfo hygiene.
+
+- Adem: MongoDB persistence wired with in-memory fallback, idempotent seed, retry connect, and runtime fixes.

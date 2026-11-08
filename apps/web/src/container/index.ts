@@ -60,6 +60,17 @@ import {
   InMemoryScenarioRepository,
   InMemoryRetainerRepository,
   InMemoryAuditLogRepository,
+  MongoCompanyRepository,
+  MongoUserRepository,
+  MongoMembershipRepository,
+  MongoPartyRepository,
+  MongoInvoiceRepository,
+  MongoPaymentRepository,
+  MongoExpenseRepository,
+  MongoCashMovementRepository,
+  MongoScenarioRepository,
+  MongoRetainerRepository,
+  MongoAuditLogRepository,
   SystemClock,
   CryptoIdGenerator,
   InMemoryFileStorage,
@@ -67,18 +78,89 @@ import {
   ConsoleLogger,
   NoopTransactionManager,
 } from "@cashpilot/infra";
+import { connectDb } from "@cashpilot/db";
 
-export const companies = new InMemoryCompanyRepository();
-export const users = new InMemoryUserRepository();
-export const memberships = new InMemoryMembershipRepository();
-export const parties = new InMemoryPartyRepository();
-export const invoices = new InMemoryInvoiceRepository();
-export const payments = new InMemoryPaymentRepository();
-export const expenses = new InMemoryExpenseRepository();
-export const movements = new InMemoryCashMovementRepository();
-export const scenarios = new InMemoryScenarioRepository();
-export const retainers = new InMemoryRetainerRepository();
-export const auditLogs = new InMemoryAuditLogRepository();
+type Repositories = {
+  companies: CompanyRepository;
+  users: UserRepository;
+  memberships: MembershipRepository;
+  parties: PartyRepository;
+  invoices: InvoiceRepository;
+  payments: PaymentRepository;
+  expenses: ExpenseRepository;
+  movements: CashMovementRepository;
+  scenarios: ScenarioRepository;
+  retainers: RetainerRepository;
+  auditLogs: AuditLogRepository;
+};
+import type {
+  CompanyRepository,
+  UserRepository,
+  MembershipRepository,
+  PartyRepository,
+  InvoiceRepository,
+  PaymentRepository,
+  ExpenseRepository,
+  CashMovementRepository,
+  ScenarioRepository,
+  RetainerRepository,
+  AuditLogRepository,
+} from "@cashpilot/application";
+
+function inMemoryRepositories(): Repositories {
+  return {
+    companies: new InMemoryCompanyRepository(),
+    users: new InMemoryUserRepository(),
+    memberships: new InMemoryMembershipRepository(),
+    parties: new InMemoryPartyRepository(),
+    invoices: new InMemoryInvoiceRepository(),
+    payments: new InMemoryPaymentRepository(),
+    expenses: new InMemoryExpenseRepository(),
+    movements: new InMemoryCashMovementRepository(),
+    scenarios: new InMemoryScenarioRepository(),
+    retainers: new InMemoryRetainerRepository(),
+    auditLogs: new InMemoryAuditLogRepository(),
+  };
+}
+
+function mongoRepositories(): Repositories {
+  return {
+    companies: new MongoCompanyRepository(),
+    users: new MongoUserRepository(),
+    memberships: new MongoMembershipRepository(),
+    parties: new MongoPartyRepository(),
+    invoices: new MongoInvoiceRepository(),
+    payments: new MongoPaymentRepository(),
+    expenses: new MongoExpenseRepository(),
+    movements: new MongoCashMovementRepository(),
+    scenarios: new MongoScenarioRepository(),
+    retainers: new MongoRetainerRepository(),
+    auditLogs: new MongoAuditLogRepository(),
+  };
+}
+
+const repositories: Repositories = await (async () => {
+  if (!process.env.DATABASE_URL) return inMemoryRepositories();
+  try {
+    await connectDb();
+    return mongoRepositories();
+  } catch (error) {
+    console.error("[cashpilot] MongoDB unavailable, falling back to in-memory repositories", error);
+    return inMemoryRepositories();
+  }
+})();
+
+export const companies = repositories.companies;
+export const users = repositories.users;
+export const memberships = repositories.memberships;
+export const parties = repositories.parties;
+export const invoices = repositories.invoices;
+export const payments = repositories.payments;
+export const expenses = repositories.expenses;
+export const movements = repositories.movements;
+export const scenarios = repositories.scenarios;
+export const retainers = repositories.retainers;
+export const auditLogs = repositories.auditLogs;
 
 export const clock = new SystemClock();
 export const idGenerator = new CryptoIdGenerator();
@@ -98,6 +180,8 @@ export const demo = {
 };
 
 async function seed() {
+  const existingCompany = await companies.byId(CompanyId.from(demo.companyId));
+  if (existingCompany) return;
   const companyId = CompanyId.from(demo.companyId);
   const ownerUserId = UserId.from(demo.ownerUserId);
   const financeUserId = UserId.from(demo.financeUserId);

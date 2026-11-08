@@ -12,13 +12,19 @@ export async function requireActor(): Promise<Actor> {
 
   let user = await users.byEmail(email);
   if (!user) {
-    user = User.fromOAuth({
+    const candidate = User.fromOAuth({
       email,
       name: session.user?.name ?? email,
       provider: "google",
       subject: session.user?.id ?? email,
     });
-    await users.save(user);
+    try {
+      await users.save(candidate);
+      user = candidate;
+    } catch {
+      user = await users.byEmail(email);
+      if (!user) throw new Error("User persistence failed");
+    }
   }
 
   const membershipList = await memberships.listByUser(user.id);

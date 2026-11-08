@@ -8,7 +8,8 @@ const nextConfig: NextConfig = {
     "@cashpilot/db",
     "@cashpilot/ui",
     "@cashpilot/config"
-  ]
+  ],
+  serverExternalPackages: ["mongoose", "mongodb"]
 };
 
 export default nextConfig;

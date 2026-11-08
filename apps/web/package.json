@@ -15,6 +15,7 @@
   "dependencies": {
     "@cashpilot/application": "workspace:*",
     "@cashpilot/config": "workspace:*",
+    "@cashpilot/db": "workspace:*",
     "@cashpilot/domain": "workspace:*",
     "@cashpilot/ui": "workspace:*",
     "next": "^15.0.0",

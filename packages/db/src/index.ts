@@ -17,13 +17,30 @@ const cache = globalForMongoose.mongooseCache ?? {
 globalForMongoose.mongooseCache = cache;
 
 export async function connectDb() {
-  if (cache.conn) return cache.conn;
+  if (cache.conn && cache.conn.connection.readyState === 1) return cache.conn;
 
   const uri = process.env.DATABASE_URL;
   if (!uri) throw new Error("DATABASE_URL is required");
 
-  cache.promise ??= mongoose.connect(uri);
-  cache.conn = await cache.promise;
+  if (!cache.promise) {
+    cache.promise = mongoose
+      .connect(uri)
+      .then((conn) => {
+        cache.conn = conn;
+        return conn;
+      })
+      .catch((error) => {
+        cache.promise = null;
+        throw error;
+      });
+  }
+
+  try {
+    cache.conn = await cache.promise;
+  } catch (error) {
+    cache.promise = null;
+    throw error;
+  }
   return cache.conn;
 }
 

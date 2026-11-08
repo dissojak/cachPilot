@@ -1,9 +1,15 @@
 import { Schema, model, models } from "mongoose";
+import type { Model } from "mongoose";
+
+function define(name: string, schema: Schema): Model<any> {
+  return (models[name] as Model<any>) || model(name, schema);
+}
 
 const moneyField = { type: Number, required: true };
 
 const companySchema = new Schema(
   {
+    _id: { type: String, required: true },
     name: { type: String, required: true, trim: true },
     sector: { type: String, required: true, trim: true },
     openingBalanceMillimes: { ...moneyField },
@@ -15,6 +21,7 @@ const companySchema = new Schema(
 
 const userSchema = new Schema(
   {
+    _id: { type: String, required: true },
     email: { type: String, required: true, trim: true, lowercase: true },
     name: { type: String, required: true, trim: true },
     oauthProvider: { type: String, required: true, trim: true },
@@ -25,8 +32,9 @@ const userSchema = new Schema(
 
 const membershipSchema = new Schema(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
+    _id: { type: String, required: true },
+    userId: { type: String, required: true },
+    companyId: { type: String, required: true },
     role: {
       type: String,
       required: true,
@@ -38,7 +46,8 @@ const membershipSchema = new Schema(
 
 const partySchema = new Schema(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
+    _id: { type: String, required: true },
+    companyId: { type: String, required: true },
     type: { type: String, required: true, enum: ["customer", "supplier"] },
     name: { type: String, required: true, trim: true },
     email: { type: String, trim: true, lowercase: true },
@@ -60,8 +69,9 @@ const invoiceLineSchema = new Schema(
 
 const invoiceSchema = new Schema(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
-    customerId: { type: Schema.Types.ObjectId, ref: "Party", required: true },
+    _id: { type: String, required: true },
+    companyId: { type: String, required: true },
+    customerId: { type: String, required: true },
     number: { type: String, required: true, trim: true },
     status: {
       type: String,
@@ -69,39 +79,40 @@ const invoiceSchema = new Schema(
       enum: ["draft", "validated", "partially_paid", "paid", "cancelled"],
       default: "draft",
     },
-    issueDate: { type: Date, required: true },
-    dueDate: { type: Date, required: true },
+    issueDate: { type: String, required: true },
+    dueDate: { type: String, required: true },
     lines: { type: [invoiceLineSchema], required: true, default: [] },
     totalMillimes: { ...moneyField, min: 1 },
-    remainingMillimes: { ...moneyField, min: 0 },
+    remainingMillimes: { type: Number, required: true, min: 0 },
     cancelledReason: { type: String, trim: true },
-    cancelledAt: { type: Date },
-    cancelledBy: { type: Schema.Types.ObjectId, ref: "User" },
+    cancelledBy: { type: String, trim: true },
   },
   { timestamps: true },
 );
 
 const paymentSchema = new Schema(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
-    invoiceId: { type: Schema.Types.ObjectId, ref: "Invoice", required: true },
+    _id: { type: String, required: true },
+    companyId: { type: String, required: true },
+    invoiceId: { type: String, required: true },
     amountMillimes: { ...moneyField, min: 1 },
-    paymentDate: { type: Date, required: true },
+    paymentDate: { type: String, required: true },
     method: { type: String, required: true, trim: true },
     note: { type: String, trim: true },
-    recordedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    recordedBy: { type: String, required: true },
   },
   { timestamps: true },
 );
 
 const expenseSchema = new Schema(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
-    submittedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    _id: { type: String, required: true },
+    companyId: { type: String, required: true },
+    submittedBy: { type: String, required: true },
     category: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
     amountMillimes: { ...moneyField, min: 1 },
-    expenseDate: { type: Date, required: true },
+    expenseDate: { type: String, required: true },
     receiptFileId: { type: String, trim: true },
     status: {
       type: String,
@@ -110,13 +121,13 @@ const expenseSchema = new Schema(
       default: "submitted",
     },
     approval: {
-      approver: { type: Schema.Types.ObjectId, ref: "User" },
-      decisionDate: { type: Date },
+      approver: { type: String },
+      decisionDate: { type: String },
       reason: { type: String, trim: true },
     },
     payment: {
-      paidBy: { type: Schema.Types.ObjectId, ref: "User" },
-      paidDate: { type: Date },
+      paidBy: { type: String },
+      paidDate: { type: String },
       amountMillimes: { type: Number, min: 1 },
     },
   },
@@ -125,17 +136,17 @@ const expenseSchema = new Schema(
 
 const cashMovementSchema = new Schema(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
+    _id: { type: String, required: true },
     type: {
       type: String,
       required: true,
       enum: ["opening", "invoice_payment", "expense_payment", "adjustment", "reversal"],
     },
     amountMillimes: { type: Number, required: true },
-    movementDate: { type: Date, required: true },
+    movementDate: { type: String, required: true },
     sourceType: { type: String, required: true, trim: true },
-    sourceId: { type: Schema.Types.ObjectId, required: true },
-    actorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    sourceId: { type: String, required: true },
+    actorId: { type: String, required: true },
     reason: { type: String, trim: true },
   },
   { timestamps: true },
@@ -148,34 +159,49 @@ const hypothesisSchema = new Schema(
       required: true,
       enum: ["client_delay", "new_expense", "extra_income"],
     },
-    invoiceId: { type: Schema.Types.ObjectId, ref: "Invoice" },
+    invoiceId: { type: String },
     delayDays: { type: Number, min: 1 },
     amountMillimes: { type: Number, min: 1 },
-    plannedDate: { type: Date },
+    plannedDate: { type: String },
     category: { type: String, trim: true },
     description: { type: String, trim: true },
-    expectedDate: { type: Date },
+    expectedDate: { type: String },
   },
   { _id: false },
 );
 
 const scenarioSchema = new Schema(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
+    _id: { type: String, required: true },
+    companyId: { type: String, required: true },
     name: { type: String, required: true, trim: true },
-    baseReferenceDate: { type: Date, required: true },
+    baseReferenceDate: { type: String, required: true },
     hypotheses: { type: [hypothesisSchema], default: [] },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    createdBy: { type: String, required: true },
+  },
+  { timestamps: true },
+);
+
+const retainerSchema = new Schema(
+  {
+    _id: { type: String, required: true },
+    companyId: { type: String, required: true },
+    customerId: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    amountMillimes: { ...moneyField },
+    intervalDays: { type: Number, required: true, min: 1 },
+    nextGenerationDate: { type: String, required: true },
+    status: { type: String, required: true, enum: ["active", "paused"], default: "active" },
   },
   { timestamps: true },
 );
 
 const auditLogSchema = new Schema(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
-    actorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    companyId: { type: String, required: true },
+    actorId: { type: String, required: true },
     entityType: { type: String, required: true, trim: true },
-    entityId: { type: Schema.Types.ObjectId, required: true },
+    entityId: { type: String, required: true },
     action: { type: String, required: true, trim: true },
     before: { type: Schema.Types.Mixed },
     after: { type: Schema.Types.Mixed },
@@ -184,18 +210,20 @@ const auditLogSchema = new Schema(
   { timestamps: true },
 );
 
-export const CompanyModel = models.Company || model("Company", companySchema);
-export const UserModel = models.User || model("User", userSchema);
-export const MembershipModel = models.Membership || model("Membership", membershipSchema);
-export const PartyModel = models.Party || model("Party", partySchema);
-export const InvoiceModel = models.Invoice || model("Invoice", invoiceSchema);
-export const PaymentModel = models.Payment || model("Payment", paymentSchema);
-export const ExpenseModel = models.Expense || model("Expense", expenseSchema);
-export const CashMovementModel = models.CashMovement || model("CashMovement", cashMovementSchema);
-export const ScenarioModel = models.Scenario || model("Scenario", scenarioSchema);
-export const AuditLogModel = models.AuditLog || model("AuditLog", auditLogSchema);
+export const CompanyModel = define("Company", companySchema);
+export const UserModel = define("User", userSchema);
+export const MembershipModel = define("Membership", membershipSchema);
+export const PartyModel = define("Party", partySchema);
+export const InvoiceModel = define("Invoice", invoiceSchema);
+export const PaymentModel = define("Payment", paymentSchema);
+export const ExpenseModel = define("Expense", expenseSchema);
+export const CashMovementModel = define("CashMovement", cashMovementSchema);
+export const ScenarioModel = define("Scenario", scenarioSchema);
+export const RetainerModel = define("Retainer", retainerSchema);
+export const AuditLogModel = define("AuditLog", auditLogSchema);
 
 companySchema.index({ name: 1 });
+userSchema.index({ email: 1 }, { unique: true });
 membershipSchema.index({ userId: 1, companyId: 1 }, { unique: true });
 partySchema.index({ companyId: 1, type: 1, name: 1 });
 invoiceSchema.index({ companyId: 1, number: 1 }, { unique: true });
@@ -204,4 +232,5 @@ paymentSchema.index({ companyId: 1, invoiceId: 1 });
 expenseSchema.index({ companyId: 1, status: 1, expenseDate: 1 });
 cashMovementSchema.index({ companyId: 1, movementDate: 1 });
 scenarioSchema.index({ companyId: 1, createdAt: -1 });
+retainerSchema.index({ companyId: 1, status: 1 });
 auditLogSchema.index({ companyId: 1, createdAt: -1 });
