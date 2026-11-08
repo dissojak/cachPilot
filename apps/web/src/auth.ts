@@ -6,6 +6,7 @@ const config: NextAuthConfig = {
   providers: [Google],
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 7 },
   trustHost: true,
+  secret: process.env.AUTH_SECRET,
 };
 
 const nextAuth = NextAuth(config);
