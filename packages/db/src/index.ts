@@ -22,23 +22,16 @@ export async function connectDb() {
   const uri = process.env.DATABASE_URL;
   if (!uri) throw new Error("DATABASE_URL is required");
 
-  if (!cache.promise) {
-    cache.promise = mongoose
-      .connect(uri)
-      .then((conn) => {
-        cache.conn = conn;
-        return conn;
-      })
-      .catch((error) => {
-        cache.promise = null;
-        throw error;
-      });
-  }
+  cache.conn = null;
+  cache.promise = null;
+
+  cache.promise = mongoose.connect(uri).then((conn) => conn);
 
   try {
     cache.conn = await cache.promise;
   } catch (error) {
     cache.promise = null;
+    cache.conn = null;
     throw error;
   }
   return cache.conn;
