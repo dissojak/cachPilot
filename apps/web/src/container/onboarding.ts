@@ -1,17 +1,17 @@
-// Import avec RegisterCompany et UpdateCompany
 import {
   RegisterCompany,
   GetCompany,
   UpdateCompany,
+  InviteMember,
 } from "@cashpilot/application";
 import {
   MongoCompanyRepository,
   MongoMembershipRepository,
   MongoObjectIdGenerator,
   MongoTransactionManager,
+  MongoUserRepository
 } from "@cashpilot/infra";
 import { CompanyId, UserId } from "@cashpilot/domain";
-import { MongoUserRepository } from "@cashpilot/infra";
 const companyRepository =
   new MongoCompanyRepository();
 
@@ -23,6 +23,8 @@ const idGenerator =
 
 const transactionManager =
   new MongoTransactionManager();
+
+const userRepository = new MongoUserRepository();
 
 export const onboardingUseCases = {
   registerCompany: new RegisterCompany(
@@ -39,6 +41,10 @@ export const onboardingUseCases = {
   getCompany: new GetCompany(
   companyRepository,
   membershipRepository
+),
+inviteMember: new InviteMember(
+  membershipRepository,
+  userRepository
 ),
 };
 
@@ -107,7 +113,6 @@ export async function getUserCompanyMemberships(
   
 }
 
-const userRepository = new MongoUserRepository();
 
 export async function getCompanyMembers(
   companyId: string
@@ -133,6 +138,13 @@ export async function getCompanyMembers(
         email: userData?.email ?? "Unknown email",
       };
     })
+  );
+}
+export async function findExistingUserByEmail(
+  email: string
+) {
+  return userRepository.byEmail(
+    email.trim().toLowerCase()
   );
 }
 
