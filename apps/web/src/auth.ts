@@ -16,7 +16,6 @@ const config: NextAuthConfig = {
 
   trustHost: true,
 
-  
 callbacks: {
   async signIn({ user, account }) {
     try {
@@ -25,36 +24,55 @@ callbacks: {
         !account.providerAccountId ||
         !user.email
       ) {
-        console.error(
-          "[AUTH] Missing Google identity information"
-        );
-
         return false;
       }
 
-      console.log("[AUTH] Google identity received");
+      await findOrCreateGoogleUser.execute({
+        email: user.email,
+        name: user.name ?? user.email,
+        googleSubject: account.providerAccountId,
+      });
 
+      return true;
+    } catch (error) {
+      console.error("[AUTH] Synchronization failed", error);
+      return false;
+    }
+  },
+
+  async jwt({ token, account, user }) {
+    // Le compte Google est fourni lors de la connexion initiale.
+    if (
+      account?.provider === "google" &&
+      account.providerAccountId &&
+      user.email
+    ) {
       const userId = await findOrCreateGoogleUser.execute({
         email: user.email,
         name: user.name ?? user.email,
         googleSubject: account.providerAccountId,
       });
 
-      console.log("[AUTH] User resolved successfully:", userId);
-
-      return true;
-    } catch (error) {
-      console.error("[AUTH] User synchronization failed");
-
-      if (error instanceof Error) {
-        console.error("[AUTH] Error type:", error.name);
-        console.error("[AUTH] Error message:", error.message);
-      }
-
-      return false;
+      token.cashpilotUserId = userId;
     }
+
+    return token;
   },
+
+  
+async session({ session, token }) {
+  if (
+    session.user &&
+    typeof token.cashpilotUserId === "string"
+  ) {
+    session.user.id = token.cashpilotUserId;
+  }
+
+  return session;
 },
+
+},
+
 
 };
 
