@@ -1,8 +1,55 @@
 import { requireActor } from "@/lib/auth-actor";
+import { useCases } from "@/container";
 import FadeIn from "@/components/fade-in";
 import AnimatedBars from "@/components/animated-bars";
+
+function formatDnt(millimes: number): string {
+  const sign = millimes < 0 ? "-" : "";
+  const abs = Math.abs(millimes);
+  const dinars = Math.floor(abs / 1000);
+  const millimesPart = String(abs % 1000).padStart(3, "0");
+  const grouped = new Intl.NumberFormat("en-US").format(dinars).replace(/,/g, " ");
+  return `${sign}${grouped},${millimesPart} DNT`;
+}
+
+const alertColor: Record<string, string> = {
+  invoice_overdue: "#C2452B",
+  expense_pending_approval: "#E3A857",
+  negative_forecast: "#C2452B",
+};
+
+const alertTarget: Record<string, string> = {
+  invoice_overdue: "/invoices",
+  expense_pending_approval: "/expenses",
+  negative_forecast: "/forecast",
+};
+
 export default async function DashboardPage() {
-  await requireActor();
+  const actor = await requireActor();
+  const data = await useCases.getDashboard.execute({ userId: actor.userId, companyId: actor.companyId });
+
+  const company = data.company;
+  const points = data.forecast.points;
+  const today = points[0];
+  const baseDate = today?.date ?? new Date().toISOString().slice(0, 10);
+  const thirty = points.find((point) => new Date(point.date).getTime() - new Date(baseDate).getTime() >= 29 * 864e5) ?? today;
+  const sixty = points.find((point) => new Date(point.date).getTime() - new Date(baseDate).getTime() >= 59 * 864e5) ?? thirty;
+  const ninety = points[points.length - 1];
+
+  const balances = points.map((point) => point.balanceMillimes);
+  const max = Math.max(...balances, 1);
+  const min = Math.min(...balances, 0);
+  const range = Math.max(max - min, 1);
+  const heights = balances.map((value) => 25 + Math.round(((value - min) / range) * 75));
+  const worstIndex = balances.indexOf(Math.min(...balances));
+
+  const cards: Array<[string, string, string, string]> = [
+    ["Forecast 30 days", formatDnt(thirty?.balanceMillimes ?? 0), "#4E8B63", "Projection from due invoices and expenses"],
+    ["Forecast 60 days", formatDnt(sixty?.balanceMillimes ?? 0), "#4E8B63", "Projection from your ledger"],
+    ["Forecast 90 days", formatDnt(ninety?.balanceMillimes ?? 0), "#4E8B63", "Projection from your ledger"],
+    ["Alerts", String(data.alerts.length), data.alerts.length ? "#C2452B" : "#4E8B63", data.alerts.length ? data.alerts.slice(0, 2).map((alert) => alert.message).join(" · ") : "Nothing pending — all clear"],
+  ];
+
   return (
     <FadeIn>
       <main className="shell">
@@ -12,7 +59,7 @@ export default async function DashboardPage() {
           <div>
             <p className="mono">Dashboard</p>
             <h1 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 40, lineHeight: "44px", margin: "8px 0 0" }}>
-              Atlas Studio
+              {company.name}
             </h1>
           </div>
           <div className="glass" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
@@ -46,27 +93,14 @@ export default async function DashboardPage() {
       <section className="glass" style={{ padding: 40, marginBottom: 24, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", right: -40, top: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(108, 245, 184, 0.18)", filter: "blur(10px)" }} />
         <p className="mono">Real balance</p>
-        <div className="hero-amount" style={{ marginTop: 8 }}>5 000,000 DNT</div>
+        <div className="hero-amount" style={{ marginTop: 8 }}>{formatDnt(data.realBalanceMillimes)}</div>
         <p style={{ color: "#4A6256", margin: "12px 0 0", maxWidth: 520 }}>
-          Updated from your latest recorded movements. Forecast assumes Acme pays on time and rent is paid on the 15th.
+          Computed from your opening balance and every recorded cash movement in the database on {String(today?.date ?? "").slice(0, 10)}.
         </p>
-        <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button type="button" style={{ height: 44, padding: "0 20px", borderRadius: 999, border: 0, background: "#1F6B4E", color: "white", fontWeight: 600, cursor: "pointer" }}>
-            Record payment
-          </button>
-          <button type="button" style={{ height: 44, padding: "0 20px", borderRadius: 999, border: "1px solid rgba(31,107,78,0.25)", background: "transparent", color: "#1F6B4E", fontWeight: 600, cursor: "pointer" }}>
-            View movements
-          </button>
-        </div>
       </section>
 
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
-        {[
-          ["Forecast 30 days", "8 000,000 DNT", "#4E8B63", "After Acme invoice"],
-          ["Forecast 60 days", "2 000,000 DNT", "#4E8B63", "After rent"],
-          ["Forecast 90 days", "2 000,000 DNT", "#4E8B63", "Stable"],
-          ["Alerts", "2", "#C2452B", "1 overdue, 1 pending"],
-        ].map(([label, value, color, note], index) => (
+        {cards.map(([label, value, color, note], index) => (
           <FadeIn key={label} delay={0.15 + index * 0.08}>
           <article className="glass lift" style={{ padding: 24 }}>
             <p className="mono">{label}</p>
@@ -83,29 +117,36 @@ export default async function DashboardPage() {
         <article className="glass" style={{ padding: 28 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <h2 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 20, margin: 0 }}>Cash forecast</h2>
-            <span className="mono">30 / 60 / 90 days</span>
+            <span className="mono">today / 30 / 60 / 90</span>
           </div>
-          <AnimatedBars heights={[45, 70, 35, 55, 80, 40, 60]} highlightIndex={2} />
-          <p style={{ color: "#4A6256", margin: "16px 0 0", fontSize: 13 }}>
-            Shortage periods are highlighted in clay. The simulated scenario can be compared from the forecast page.
+          <AnimatedBars heights={heights} highlightIndex={worstIndex} />
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+            {points.map((point) => (
+              <span key={point.date} style={{ flex: 1, textAlign: "center", color: "#4A6256", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}>
+                {String(point.date).slice(0, 10)}
+              </span>
+            ))}
+          </div>
+          <p style={{ color: "#4A6256", margin: "12px 0 0", fontSize: 13 }}>
+            {heights.length} live projection points from your invoices and expenses. Lowest projection ({formatDnt(Math.min(...balances))}) is highlighted in clay.
           </p>
         </article>
 
         <article className="glass" style={{ padding: 28 }}>
           <h2 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 20, margin: "0 0 16px" }}>Alerts</h2>
+          {data.alerts.length === 0 && (
+            <p style={{ color: "#4A6256" }}>No alerts. Invoices are paid on time, expenses are processed and the forecast stays positive.</p>
+          )}
           <div style={{ display: "grid", gap: 12 }}>
-            {[
-              ["Overdue invoice", "INV-001 is overdue by 3 days", "#C2452B"],
-              ["Pending approval", "Software subscription waiting", "#E3A857"],
-            ].map(([title, text, color]) => (
-              <div key={title} style={{ padding: 16, borderRadius: 20, background: "rgba(255,255,255,0.55)", borderLeft: `4px solid ${color}` }}>
-                <strong style={{ display: "block", marginBottom: 4 }}>{title}</strong>
-                <span style={{ color: "#4A6256", fontSize: 13 }}>{text}</span>
-              </div>
+            {data.alerts.slice(0, 4).map((alert) => (
+              <a key={`${alert.type}-${alert.entityId}`} href={alertTarget[alert.type] ?? "#"} style={{ textDecoration: "none", color: "inherit", padding: 16, borderRadius: 20, background: "rgba(255,255,255,0.55)", borderLeft: `4px solid ${alertColor[alert.type] ?? "#E3A857"}` }}>
+                <strong style={{ display: "block", marginBottom: 4 }}>{alert.type.replace(/_/g, " ")}</strong>
+                <span style={{ color: "#4A6256", fontSize: 13 }}>{alert.message}</span>
+              </a>
             ))}
           </div>
-          <a href="/forecast" style={{ display: "inline-block", marginTop: 16, color: "#1F6B4E", textDecoration: "underline", fontWeight: 600 }}>
-            View forecast
+          <a href="/cash" style={{ display: "inline-block", marginTop: 16, color: "#1F6B4E", textDecoration: "underline", fontWeight: 600 }}>
+            View movements
           </a>
         </article>
       </section>

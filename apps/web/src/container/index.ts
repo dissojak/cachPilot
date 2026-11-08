@@ -139,16 +139,9 @@ function mongoRepositories(): Repositories {
   };
 }
 
-const repositories: Repositories = await (async () => {
-  if (!process.env.DATABASE_URL) return inMemoryRepositories();
-  try {
-    await connectDb();
-    return mongoRepositories();
-  } catch (error) {
-    console.error("[cashpilot] MongoDB unavailable, falling back to in-memory repositories", error);
-    return inMemoryRepositories();
-  }
-})();
+const repositories: Repositories = process.env.DATABASE_URL
+  ? mongoRepositories()
+  : inMemoryRepositories();
 
 export const companies = repositories.companies;
 export const users = repositories.users;
@@ -178,6 +171,15 @@ export const demo = {
   globexPartyId: "party-globex",
   supplierPartyId: "party-supplier",
 };
+
+const globalForSeed = globalThis as typeof globalThis & { cashpilotSeeded?: boolean };
+
+export async function ensureDb() {
+  if (process.env.DATABASE_URL) await connectDb();
+  if (globalForSeed.cashpilotSeeded) return;
+  globalForSeed.cashpilotSeeded = true;
+  await seed();
+}
 
 async function seed() {
   const existingCompany = await companies.byId(CompanyId.from(demo.companyId));
@@ -247,8 +249,6 @@ async function seed() {
   scenario.addHypothesis({ type: "client_delay", invoiceId: "invoice-002", delayDays: 20 });
   await scenarios.save(scenario);
 }
-
-await seed();
 
 export const useCases = {
   registerCompany: new RegisterCompany(companies, memberships),

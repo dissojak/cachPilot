@@ -1,11 +1,12 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { users, memberships, demo } from "@/container";
+import { users, memberships, demo, ensureDb } from "@/container";
 import { User, Membership, CompanyId } from "@cashpilot/domain";
 
-export type Actor = { userId: string; companyId: string; role: "owner" | "finance_manager" | "collaborator" };
+export type Actor = { userId: string; companyId: string; role: "owner" | "finance_manager" | "collaborator"; name: string | null; email: string };
 
 export async function requireActor(): Promise<Actor> {
+  await ensureDb();
   const session = await auth();
   const email = session?.user?.email;
   if (!email) redirect("/login");
@@ -36,5 +37,5 @@ export async function requireActor(): Promise<Actor> {
     await memberships.save(membership);
   }
 
-  return { userId: user.id.value, companyId: membership.companyId.value, role: membership.role };
+  return { userId: user.id.value, companyId: membership.companyId.value, role: membership.role, name: session.user?.name ?? null, email };
 }

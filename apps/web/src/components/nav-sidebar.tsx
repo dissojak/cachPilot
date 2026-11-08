@@ -150,7 +150,7 @@ function NavLinks({ onNavigate, stagger = false }: { onNavigate?: () => void; st
   );
 }
 
-function SidebarContent({ email, name, onNavigate, stagger }: { email: string | null; name: string | null; onNavigate?: () => void; stagger?: boolean }) {
+function SidebarContent({ email, name, onNavigate, stagger, role, companyName }: { email: string | null; name: string | null; onNavigate?: () => void; stagger?: boolean; role: string | null; companyName: string | null }) {
   const initials = (name ?? email ?? "U")
     .split(/\s+/)
     .map((part) => part[0]?.toUpperCase() ?? "")
@@ -167,7 +167,7 @@ function SidebarContent({ email, name, onNavigate, stagger }: { email: string | 
           </div>
           <div>
             <div style={{ fontFamily: "Outfit, system-ui, sans-serif", fontWeight: 650, fontSize: 17, color: "var(--text-primary)" }}>CashPilot</div>
-            <div className="mono" style={{ margin: 0 }}>Atlas Studio</div>
+            <div className="mono" style={{ margin: 0 }}>{companyName ?? "Company"}</div>
           </div>
         </div>
       </Link>
@@ -178,8 +178,23 @@ function SidebarContent({ email, name, onNavigate, stagger }: { email: string | 
         <div className="glass" style={{ padding: 14, borderRadius: 18, display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
           <div className="nav-avatar" style={{ flexShrink: 0 }}>{initials || "U"}</div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 650, fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {name ?? "Team member"}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ fontWeight: 650, fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {name ?? "Team member"}
+              </div>
+              <span
+                className="mono"
+                style={{
+                  flexShrink: 0,
+                  fontSize: 9,
+                  padding: "2px 7px",
+                  borderRadius: 999,
+                  background: role === "owner" ? "rgba(31,107,78,0.14)" : role === "finance_manager" ? "rgba(227,168,87,0.18)" : "rgba(207,224,204,0.9)",
+                  color: role === "owner" ? "#1F6B4E" : role === "finance_manager" ? "#9C6B1E" : "#4A6256",
+                }}
+              >
+                {role === "owner" ? "owner" : role === "finance_manager" ? "finance" : role ?? "member"}
+              </span>
             </div>
             <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {email ?? "signed in"}
@@ -196,7 +211,7 @@ function SidebarContent({ email, name, onNavigate, stagger }: { email: string | 
   );
 }
 
-export default function NavSidebar({ email, name }: { email: string | null; name: string | null }) {
+export default function NavSidebar({ email, name, role, companyName }: { email: string | null; name: string | null; role: string | null; companyName: string | null }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const close = () => setDrawerOpen(false);
 
@@ -208,7 +223,7 @@ export default function NavSidebar({ email, name }: { email: string | null; name
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
-        <SidebarContent email={email} name={name} stagger />
+        <SidebarContent email={email} name={name} stagger role={role} companyName={companyName} />
       </motion.aside>
 
       <div className="app-topbar">
@@ -241,7 +256,7 @@ export default function NavSidebar({ email, name }: { email: string | null; name
                   {icons.close}
                 </button>
               </div>
-              <SidebarContent email={email} name={name} onNavigate={close} stagger />
+              <SidebarContent email={email} name={name} onNavigate={close} stagger role={role} companyName={companyName} />
             </motion.aside>
           </>
         )}

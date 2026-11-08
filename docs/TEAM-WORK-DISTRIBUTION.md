@@ -86,3 +86,5 @@ echo done
 - Adem: fixed sign-in flow (v5 server action), PDF export auth guard, and tsbuildinfo hygiene.
 
 - Adem: MongoDB persistence wired with in-memory fallback, idempotent seed, retry connect, and runtime fixes.
+
+- Adem (2026-11-08): dashboard/forecast/invoices now read from MongoDB (no hardcoded demo numbers); members page lists real roles from memberships collection; sidebar + layout resolve role from DB; fixed dev-mode Mongoose buffering timeouts via ensureDb() gate; dev server runs under launchd (label cashpilot.dev).
