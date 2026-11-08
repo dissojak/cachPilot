@@ -1,4 +1,5 @@
 
+import Link from "next/link";
 import { auth } from "@/auth";
 import { getCreatedCompanyForUser } from "@/container/onboarding";
 import { notFound, redirect } from "next/navigation";
@@ -67,8 +68,49 @@ export default async function OnboardingCompletePage({
         </p>
 
         <p>
-          Your company is now registered in MongoDB Atlas.
+          Your company is now registered.
         </p>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            marginTop: 30,
+          }}
+        >
+          <Link
+            href={`/companies/${companyId}`}
+            style={{
+              display: "block",
+              padding: "14px 20px",
+              background: "#1F6B4E",
+              color: "white",
+              textAlign: "center",
+              borderRadius: 12,
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            Go to Company Workspace
+          </Link>
+
+          <Link
+            href="/companies"
+            style={{
+              display: "block",
+              padding: "14px 20px",
+              border: "1px solid #1F6B4E",
+              color: "#1F6B4E",
+              textAlign: "center",
+              borderRadius: 12,
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            View All Companies
+          </Link>
+        </div>
       </section>
     </main>
   );
