@@ -1,10 +1,12 @@
+import { requireActor } from "@/lib/auth-actor";
 const invoices = [
   { number: "INV-001", customer: "Acme Client", amount: "3 000,000 DNT", remaining: "2 000,000 DNT", due: "10 Nov", status: "Partially paid", color: "#E3A857" },
   { number: "INV-002", customer: "Globex Corp", amount: "4 500,000 DNT", remaining: "4 500,000 DNT", due: "25 Nov", status: "Validated", color: "#6FA8B8" },
   { number: "INV-003", customer: "Acme Client", amount: "1 200,000 DNT", remaining: "1 200,000 DNT", due: "—", status: "Draft", color: "#7C8F83" },
 ];
 
-export default function InvoicesPage() {
+export default async function InvoicesPage() {
+  await requireActor();
   return (
     <main className="shell">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 24, marginBottom: 28 }}>

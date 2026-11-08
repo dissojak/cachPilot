@@ -1,3 +1,4 @@
+import { requireActor } from "@/lib/auth-actor";
 import Link from "next/link";
 const points = [
   { label: "Now", value: 5000, color: "#1F6B4E" },
@@ -6,7 +7,8 @@ const points = [
   { label: "90d", value: 2000, color: "#4E8B63" },
 ];
 
-export default function ForecastPage() {
+export default async function ForecastPage() {
+  await requireActor();
   const max = 9000;
 
   return (

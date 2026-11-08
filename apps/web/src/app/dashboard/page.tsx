@@ -1,4 +1,6 @@
-export default function DashboardPage() {
+import { requireActor } from "@/lib/auth-actor";
+export default async function DashboardPage() {
+  await requireActor();
   return (
     <main className="shell">
       <div style={{ position: "relative", minHeight: 220, marginBottom: 24 }}>

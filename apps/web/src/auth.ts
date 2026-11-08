@@ -7,6 +7,13 @@ const config: NextAuthConfig = {
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 7 },
   trustHost: true,
   secret: process.env.AUTH_SECRET,
+  pages: { signIn: "/login" },
+  callbacks: {
+    authorized: ({ auth, request: { nextUrl } }) => {
+      if (auth?.user) return true;
+      return false;
+    },
+  },
   logger: {
     warn: (msg) => console.warn("[authjs-warn]", msg),
     error: (msg) => console.error("[authjs-error]", msg),

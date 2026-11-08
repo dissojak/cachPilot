@@ -1,6 +1,8 @@
+import { requireActor } from "@/lib/auth-actor";
 import { submitExpenseAction } from "@/app/actions";
 
-export default function NewExpensePage() {
+export default async function NewExpensePage() {
+  await requireActor();
   return (
     <main className="shell motion-fade">
       <h1 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 40, lineHeight: "44px" }}>Submit expense</h1>

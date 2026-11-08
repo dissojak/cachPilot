@@ -1,6 +1,8 @@
+import { requireActor } from "@/lib/auth-actor";
 import { createInvoiceDraftAction } from "@/app/actions";
 
-export default function NewInvoicePage() {
+export default async function NewInvoicePage() {
+  await requireActor();
   return (
     <main className="shell motion-fade">
       <h1 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 40, lineHeight: "44px" }}>New invoice</h1>

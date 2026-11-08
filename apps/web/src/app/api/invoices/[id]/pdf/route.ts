@@ -4,8 +4,8 @@ import { requireActor } from "@/lib/auth-actor";
 import { DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const actor = await requireActor();
   try {
-    const actor = await requireActor();
     const { id } = await params;
     const result = await useCases.exportInvoicePdf.execute({
       userId: actor.userId,

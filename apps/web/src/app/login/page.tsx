@@ -1,5 +1,12 @@
 import { signInWithGoogle } from "./signin-action";
-export default function LoginPage() {
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
+  const redirectTo = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/dashboard";
   return (
     <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontFamily: "Outfit, system-ui, sans-serif", fontSize: "28vw", fontWeight: 600, color: "rgba(31,107,78,0.05)", letterSpacing: "-0.05em", pointerEvents: "none", userSelect: "none" }}>
@@ -14,6 +21,7 @@ export default function LoginPage() {
           Track real cash, see shortages early, and test decisions before you make them.
         </p>
         <form action={signInWithGoogle}>
+          <input type="hidden" name="callbackUrl" value={redirectTo} />
           <button
             type="submit"
             style={{ display: "block", width: "100%", height: 52, border: 0, borderRadius: 999, background: "#1F6B4E", color: "white", fontWeight: 600, cursor: "pointer", fontSize: 16 }}

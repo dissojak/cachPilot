@@ -1,4 +1,6 @@
-export default function CompanySettingsPage() {
+import { requireActor } from "@/lib/auth-actor";
+export default async function CompanySettingsPage() {
+  await requireActor();
   return (
     <main className="shell">
       <h1 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 40, lineHeight: "44px" }}>Company settings</h1>

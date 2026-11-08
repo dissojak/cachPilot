@@ -1,8 +1,10 @@
+import { requireActor } from "@/lib/auth-actor";
 import { useCases, demo } from "@/container";
 import { money } from "@/lib/format";
 import { updateInvoiceDraftAction } from "@/app/actions";
 
 export default async function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
+  await requireActor();
   const { id } = await params;
   const invoice = await useCases.getInvoice.execute({ userId: demo.ownerUserId, companyId: demo.companyId, invoiceId: id });
 
