@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireCompanyActor } from "@/lib/company-actor";
 import { getCompanyMembers } from "@/container/onboarding";
 import InviteMemberForm from "./invite-member-form";
+import MemberActions from "./member-actions";
 
 interface Props {
   params: Promise<{
@@ -131,7 +132,17 @@ export default async function CompanyMembersPage({
             >
               {roleLabels[member.role]}
             </span>
+            {/* Member management - Owner only */}
+            {actor.role === "owner" &&
+            member.role !== "owner" && (
+                <MemberActions
+                companyId={companyId}
+                userId={member.userId}
+                currentRole={member.role}
+                />
+            )}
           </article>
+          
         ))}
       </section>
 

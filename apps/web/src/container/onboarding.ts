@@ -3,6 +3,8 @@ import {
   GetCompany,
   UpdateCompany,
   InviteMember,
+  ChangeMemberRole,
+  RemoveMember,
 } from "@cashpilot/application";
 import {
   MongoCompanyRepository,
@@ -45,6 +47,13 @@ export const onboardingUseCases = {
 inviteMember: new InviteMember(
   membershipRepository,
   userRepository
+),
+changeMemberRole: new ChangeMemberRole(
+  membershipRepository
+),
+
+removeMember: new RemoveMember(
+  membershipRepository
 ),
 };
 

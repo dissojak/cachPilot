@@ -1,44 +1,87 @@
-import { CompanyId, UserId } from "@cashpilot/domain";
-import { Membership } from "@cashpilot/domain";
-import { MembershipRepository } from "../ports/membership-repository";
-import { UserRepository } from "../ports/user-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+
+import {
+  CompanyId,
+  UserId,
+  Membership,
+  DomainError,
+  DOMAIN_ERROR_CODES,
+} from "@cashpilot/domain";
+
+import type {
+  MembershipRepository,
+  UserRepository,
+} from "../ports";
 
 export interface InviteMemberInput {
   actorUserId: string;
   companyId: string;
   userId: string;
-  role: "owner" | "finance_manager" | "collaborator";
+  role: "finance_manager" | "collaborator";
 }
 
 export class InviteMember {
   constructor(
     private readonly memberships: MembershipRepository,
-    private readonly users: UserRepository,
+    private readonly users: UserRepository
   ) {}
 
   async execute(input: InviteMemberInput) {
-    const actor = await this.memberships.byUserAndCompany(
-      UserId.from(input.actorUserId),
-      CompanyId.from(input.companyId),
-    );
+    const companyId = CompanyId.from(input.companyId);
+    const actorId = UserId.from(input.actorUserId);
+    const targetId = UserId.from(input.userId);
+
+    // 1. Verify the actor is an owner
+    const actor =
+      await this.memberships.byUserAndCompany(
+        actorId,
+        companyId
+      );
+
     if (!actor || actor.role !== "owner") {
-      throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Only the owner can invite members");
+      throw new DomainError(
+        DOMAIN_ERROR_CODES.ACCESS_DENIED,
+        "Only owners can add members"
+      );
     }
 
-    const user = await this.users.byId(UserId.from(input.userId));
+    // 2. Verify the target user exists
+    const user = await this.users.byId(targetId);
+
     if (!user) {
-      throw new DomainError(DOMAIN_ERROR_CODES.USER_NOT_FOUND, "User not found");
+      throw new DomainError(
+        DOMAIN_ERROR_CODES.USER_NOT_FOUND,
+        "User not found"
+      );
     }
 
+    // 3. Check whether the user is already a member
+    const existingMembership =
+      await this.memberships.byUserAndCompany(
+        targetId,
+        companyId
+      );
+
+    if (existingMembership) {
+      throw new DomainError(
+        DOMAIN_ERROR_CODES.DUPLICATE_OPERATION,
+        "User is already a member of this company"
+      );
+    }
+
+    // 4. Create the membership
     const membership = Membership.create(
-      UserId.from(input.userId),
-      CompanyId.from(input.companyId),
-      input.role,
+      targetId,
+      companyId,
+      input.role
     );
+
+    // 5. Save the membership
     await this.memberships.save(membership);
 
-    return { userId: input.userId, companyId: input.companyId, role: input.role };
+    return {
+      userId: input.userId,
+      companyId: input.companyId,
+      role: input.role,
+    };
   }
 }

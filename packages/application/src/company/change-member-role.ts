@@ -1,43 +1,91 @@
-import { CompanyId, UserId } from "@cashpilot/domain";
-import { Membership } from "@cashpilot/domain";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+
+import {
+  CompanyId,
+  UserId,
+  Membership,
+  DomainError,
+  DOMAIN_ERROR_CODES,
+} from "@cashpilot/domain";
+
+import type {
+  MembershipRepository,
+} from "../ports/membership-repository";
 
 export interface ChangeMemberRoleInput {
   actorUserId: string;
   companyId: string;
   userId: string;
-  role: "owner" | "finance_manager" | "collaborator";
+  role: "finance_manager" | "collaborator";
 }
 
 export class ChangeMemberRole {
-  constructor(private readonly memberships: MembershipRepository) {}
+  constructor(
+    private readonly memberships: MembershipRepository
+  ) {}
 
   async execute(input: ChangeMemberRoleInput) {
-    const actor = await this.memberships.byUserAndCompany(
-      UserId.from(input.actorUserId),
-      CompanyId.from(input.companyId),
-    );
+    const companyId = CompanyId.from(input.companyId);
+    const actorId = UserId.from(input.actorUserId);
+    const targetId = UserId.from(input.userId);
+
+    // 1. Verify that the actor is an owner
+    const actor =
+      await this.memberships.byUserAndCompany(
+        actorId,
+        companyId
+      );
+
     if (!actor || actor.role !== "owner") {
-      throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Only the owner can change roles");
+      throw new DomainError(
+        DOMAIN_ERROR_CODES.ACCESS_DENIED,
+        "Only owners can change member roles"
+      );
     }
 
-    const membership = await this.memberships.byUserAndCompany(
-      UserId.from(input.userId),
-      CompanyId.from(input.companyId),
-    );
+    // 2. Find the target member
+    const membership =
+      await this.memberships.byUserAndCompany(
+        targetId,
+        companyId
+      );
+
     if (!membership) {
-      throw new DomainError(DOMAIN_ERROR_CODES.USER_NOT_FOUND, "Membership not found");
+      throw new DomainError(
+        DOMAIN_ERROR_CODES.USER_NOT_FOUND,
+        "Membership not found"
+      );
     }
 
+    // 3. Protect existing owners
+    if (membership.role === "owner") {
+      throw new DomainError(
+        DOMAIN_ERROR_CODES.ACCESS_DENIED,
+        "Owner role cannot be changed"
+      );
+    }
+
+    // 4. Reject unchanged roles
+    if (membership.role === input.role) {
+      throw new DomainError(
+        DOMAIN_ERROR_CODES.DUPLICATE_OPERATION,
+        "Member already has this role"
+      );
+    }
+
+    // 5. Create the updated membership
     const updated = Membership.create(
-      UserId.from(input.userId),
-      CompanyId.from(input.companyId),
-      input.role,
+      targetId,
+      companyId,
+      input.role
     );
+
+    // 6. Save to the repository
     await this.memberships.save(updated);
 
-    return { userId: input.userId, companyId: input.companyId, role: input.role };
+    return {
+      userId: input.userId,
+      companyId: input.companyId,
+      role: input.role,
+    };
   }
 }
