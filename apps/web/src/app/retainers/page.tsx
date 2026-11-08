@@ -1,9 +1,11 @@
-import { useCases, demo } from "@/container";
+import { useCases } from "@/container";
+import { requireActor } from "@/lib/auth-actor";
 import { money, date } from "@/lib/format";
 import { createRetainerAction, generateRetainerInvoicesAction } from "@/app/actions";
 
 export default async function RetainersPage() {
-  const retainers = await useCases.listRetainers.execute({ userId: demo.ownerUserId, companyId: demo.companyId });
+  const actor = await requireActor();
+  const retainers = await useCases.listRetainers.execute({ userId: actor.userId, companyId: actor.companyId });
 
   return (
     <main className="shell motion-fade">

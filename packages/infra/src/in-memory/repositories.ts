@@ -34,6 +34,7 @@ export class InMemoryMembershipRepository implements MembershipRepository {
   private key(userId: UserId, companyId: CompanyId) { return `${userId.value}:${companyId.value}`; }
   async byUserAndCompany(userId: UserId, companyId: CompanyId) { return this.items.get(this.key(userId, companyId)) ?? null; }
   async listByCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
+  async listByUser(userId: UserId) { return [...this.items.values()].filter((item) => item.userId.equals(userId)); }
   async save(membership: Membership) { this.items.set(this.key(membership.userId, membership.companyId), membership); }
   async remove(userId: UserId, companyId: CompanyId) { this.items.delete(this.key(userId, companyId)); }
 }

@@ -1,9 +1,11 @@
-import { useCases, demo } from "@/container";
+import { useCases } from "@/container";
+import { requireActor } from "@/lib/auth-actor";
 import { money, date } from "@/lib/format";
 import Link from "next/link";
 
 export default async function ExpensesPage() {
-  const expenses = await useCases.listExpenses.execute({ userId: demo.ownerUserId, companyId: demo.companyId });
+  const actor = await requireActor();
+  const expenses = await useCases.listExpenses.execute({ userId: actor.userId, companyId: actor.companyId });
 
   return (
     <main className="shell motion-fade">

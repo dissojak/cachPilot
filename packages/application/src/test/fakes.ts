@@ -1,9 +1,18 @@
-import { Company, User, Membership } from "@cashpilot/domain";
-import { CompanyId, UserId } from "@cashpilot/domain";
+import { Company, User, Membership, Party, Invoice, Payment, Expense, CashMovement, Scenario, Retainer } from "@cashpilot/domain";
+import { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId } from "@cashpilot/domain";
 import {
   CompanyRepository,
   UserRepository,
   MembershipRepository,
+  PartyRepository,
+  InvoiceRepository,
+  PaymentRepository,
+  ExpenseRepository,
+  CashMovementRepository,
+  ScenarioRepository,
+  RetainerRepository,
+  AuditLogRepository,
+  AuditLogEntry,
 } from "../ports";
 
 export class InMemoryCompanyRepository implements CompanyRepository {
@@ -24,6 +33,63 @@ export class InMemoryMembershipRepository implements MembershipRepository {
   private key(userId: UserId, companyId: CompanyId) { return `${userId.value}:${companyId.value}`; }
   async byUserAndCompany(userId: UserId, companyId: CompanyId) { return this.items.get(this.key(userId, companyId)) ?? null; }
   async listByCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
+  async listByUser(userId: UserId) { return [...this.items.values()].filter((item) => item.userId.equals(userId)); }
   async save(membership: Membership) { this.items.set(this.key(membership.userId, membership.companyId), membership); }
   async remove(userId: UserId, companyId: CompanyId) { this.items.delete(this.key(userId, companyId)); }
+}
+
+export class InMemoryPartyRepository implements PartyRepository {
+  private readonly items = new Map<string, Party>();
+  async byId(id: PartyId) { return this.items.get(id.value) ?? null; }
+  async byCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
+  async save(party: Party) { this.items.set(party.id.value, party); }
+}
+
+export class InMemoryInvoiceRepository implements InvoiceRepository {
+  private readonly items = new Map<string, Invoice>();
+  async byId(id: InvoiceId) { return this.items.get(id.value) ?? null; }
+  async byCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
+  async save(invoice: Invoice) { this.items.set(invoice.id.value, invoice); }
+  async nextNumber() { return `INV-${this.items.size + 1}`; }
+}
+
+export class InMemoryPaymentRepository implements PaymentRepository {
+  private readonly items = new Map<string, Payment>();
+  async byId(id: PaymentId) { return this.items.get(id.value) ?? null; }
+  async byInvoice(invoiceId: InvoiceId) { return [...this.items.values()].filter((item) => item.invoiceId.equals(invoiceId)); }
+  async byCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
+  async save(payment: Payment) { this.items.set(payment.id.value, payment); }
+}
+
+export class InMemoryExpenseRepository implements ExpenseRepository {
+  private readonly items = new Map<string, Expense>();
+  async byId(id: ExpenseId) { return this.items.get(id.value) ?? null; }
+  async byCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
+  async save(expense: Expense) { this.items.set(expense.id.value, expense); }
+}
+
+export class InMemoryCashMovementRepository implements CashMovementRepository {
+  private readonly items: CashMovement[] = [];
+  async byCompany(companyId: CompanyId) { return this.items.filter((item) => item.companyId.equals(companyId)); }
+  async save(movement: CashMovement) { this.items.push(movement); }
+}
+
+export class InMemoryScenarioRepository implements ScenarioRepository {
+  private readonly items = new Map<string, Scenario>();
+  async byId(id: ScenarioId) { return this.items.get(id.value) ?? null; }
+  async byCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
+  async save(scenario: Scenario) { this.items.set(scenario.id.value, scenario); }
+}
+
+export class InMemoryRetainerRepository implements RetainerRepository {
+  private readonly items = new Map<string, Retainer>();
+  async byId(id: RetainerId) { return this.items.get(id.value) ?? null; }
+  async byCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
+  async save(retainer: Retainer) { this.items.set(retainer.id.value, retainer); }
+}
+
+export class InMemoryAuditLogRepository implements AuditLogRepository {
+  private readonly items: AuditLogEntry[] = [];
+  async save(entry: AuditLogEntry) { this.items.push(entry); }
+  async byCompany(companyId: string) { return this.items.filter((item) => item.companyId === companyId); }
 }

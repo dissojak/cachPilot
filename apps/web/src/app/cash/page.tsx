@@ -1,10 +1,12 @@
-import { useCases, demo } from "@/container";
+import { useCases } from "@/container";
+import { requireActor } from "@/lib/auth-actor";
 import { money, date } from "@/lib/format";
 import { setOpeningBalanceAction, recordAdjustmentAction } from "@/app/actions";
 
 export default async function CashPage() {
-  const balance = await useCases.getRealBalance.execute({ userId: demo.ownerUserId, companyId: demo.companyId });
-  const movements = await useCases.listCashMovements.execute({ userId: demo.ownerUserId, companyId: demo.companyId });
+  const actor = await requireActor();
+  const balance = await useCases.getRealBalance.execute({ userId: actor.userId, companyId: actor.companyId });
+  const movements = await useCases.listCashMovements.execute({ userId: actor.userId, companyId: actor.companyId });
 
   return (
     <main className="shell motion-fade">

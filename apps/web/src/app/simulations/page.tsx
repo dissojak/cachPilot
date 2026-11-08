@@ -1,10 +1,12 @@
-import { useCases, demo } from "@/container";
+import { useCases } from "@/container";
+import { requireActor } from "@/lib/auth-actor";
 import { date } from "@/lib/format";
 import Link from "next/link";
 import { createScenarioAction, addHypothesisAction } from "@/app/actions";
 
 export default async function SimulationsPage() {
-  const scenarios = await useCases.listScenarios.execute({ userId: demo.ownerUserId, companyId: demo.companyId });
+  const actor = await requireActor();
+  const scenarios = await useCases.listScenarios.execute({ userId: actor.userId, companyId: actor.companyId });
 
   return (
     <main className="shell motion-fade">

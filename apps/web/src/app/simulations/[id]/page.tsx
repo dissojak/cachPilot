@@ -1,12 +1,14 @@
-import { useCases, demo } from "@/container";
+import { useCases } from "@/container";
+import { requireActor } from "@/lib/auth-actor";
 import { date } from "@/lib/format";
 import Link from "next/link";
 import { addHypothesisAction } from "@/app/actions";
 
 export default async function SimulationDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const actor = await requireActor();
   const { id } = await params;
-  const scenario = await useCases.getScenario.execute({ userId: demo.ownerUserId, companyId: demo.companyId, scenarioId: id });
-  const result = await useCases.runSimulation.execute({ userId: demo.ownerUserId, companyId: demo.companyId, scenarioId: id });
+  const scenario = await useCases.getScenario.execute({ userId: actor.userId, companyId: actor.companyId, scenarioId: id });
+  const result = await useCases.runSimulation.execute({ userId: actor.userId, companyId: actor.companyId, scenarioId: id });
 
   return (
     <main className="shell motion-fade">

@@ -8,4 +8,9 @@ const config: NextAuthConfig = {
   trustHost: true,
 };
 
-export const handlers = NextAuth(config).handlers;
+const nextAuth = NextAuth(config);
+
+export const handlers = nextAuth.handlers;
+export const auth = nextAuth.auth as any;
+export const signIn = nextAuth.signIn as any;
+export const signOut = nextAuth.signOut as any;

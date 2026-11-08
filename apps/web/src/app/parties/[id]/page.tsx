@@ -1,10 +1,12 @@
-import { useCases, demo } from "@/container";
+import { useCases } from "@/container";
+import { requireActor } from "@/lib/auth-actor";
 import { money, date } from "@/lib/format";
 import Link from "next/link";
 
 export default async function PartyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const actor = await requireActor();
   const { id } = await params;
-  const history = await useCases.getPartyHistory.execute({ userId: demo.ownerUserId, companyId: demo.companyId, partyId: id });
+  const history = await useCases.getPartyHistory.execute({ userId: actor.userId, companyId: actor.companyId, partyId: id });
 
   return (
     <main className="shell motion-fade">

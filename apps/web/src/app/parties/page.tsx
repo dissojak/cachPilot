@@ -1,10 +1,12 @@
-import { useCases, demo } from "@/container";
+import { useCases } from "@/container";
+import { requireActor } from "@/lib/auth-actor";
 import { money } from "@/lib/format";
 import Link from "next/link";
 import { createPartyAction } from "@/app/actions";
 
 export default async function PartiesPage() {
-  const parties = await useCases.listParties.execute({ userId: demo.ownerUserId, companyId: demo.companyId });
+  const actor = await requireActor();
+  const parties = await useCases.listParties.execute({ userId: actor.userId, companyId: actor.companyId });
 
   return (
     <main className="shell motion-fade">

@@ -1,11 +1,13 @@
-import { useCases, demo } from "@/container";
+import { useCases } from "@/container";
+import { requireActor } from "@/lib/auth-actor";
 import { money, date } from "@/lib/format";
 import Link from "next/link";
 import { approveExpenseAction, refuseExpenseAction, markExpensePaidAction } from "@/app/actions";
 
 export default async function ExpenseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const actor = await requireActor();
   const { id } = await params;
-  const expense = await useCases.getExpense.execute({ userId: demo.ownerUserId, companyId: demo.companyId, expenseId: id });
+  const expense = await useCases.getExpense.execute({ userId: actor.userId, companyId: actor.companyId, expenseId: id });
 
   return (
     <main className="shell motion-fade">

@@ -1,5 +1,7 @@
 "use server";
 
+import { requireActor } from "@/lib/auth-actor";
+
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { useCases, demo } from "@/container";
@@ -8,6 +10,7 @@ const moneySchema = z.coerce.number().int().positive();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export async function createInvoiceDraftAction(formData: FormData) {
+  const actor = await requireActor();
   const parsed = z.object({
     customerId: z.string().min(1),
     number: z.string().min(1),
@@ -21,7 +24,7 @@ export async function createInvoiceDraftAction(formData: FormData) {
   if (!parsed.success) return;
 
   await useCases.createInvoiceDraft.execute({
-    userId: demo.ownerUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     customerId: parsed.data.customerId,
     number: parsed.data.number,
@@ -35,6 +38,7 @@ export async function createInvoiceDraftAction(formData: FormData) {
 }
 
 export async function updateInvoiceDraftAction(formData: FormData) {
+  const actor = await requireActor();
   const parsed = z.object({
     invoiceId: z.string().min(1),
     customerId: z.string().min(1),
@@ -49,7 +53,7 @@ export async function updateInvoiceDraftAction(formData: FormData) {
   if (!parsed.success) return;
 
   await useCases.updateInvoiceDraft.execute({
-    userId: demo.ownerUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     invoiceId: parsed.data.invoiceId,
     customerId: parsed.data.customerId,
@@ -64,22 +68,25 @@ export async function updateInvoiceDraftAction(formData: FormData) {
 }
 
 export async function validateInvoiceAction(formData: FormData) {
+  const actor = await requireActor();
   const invoiceId = String(formData.get("invoiceId") ?? "");
-  await useCases.validateInvoice.execute({ userId: demo.ownerUserId, companyId: demo.companyId, invoiceId });
+  await useCases.validateInvoice.execute({ userId: actor.userId, companyId: demo.companyId, invoiceId });
   revalidatePath("/invoices");
   revalidatePath(`/invoices/${invoiceId}`);
   return;
 }
 
 export async function cancelInvoiceAction(formData: FormData) {
+  const actor = await requireActor();
   const invoiceId = String(formData.get("invoiceId") ?? "");
-  await useCases.cancelInvoice.execute({ userId: demo.ownerUserId, companyId: demo.companyId, invoiceId });
+  await useCases.cancelInvoice.execute({ userId: actor.userId, companyId: demo.companyId, invoiceId });
   revalidatePath("/invoices");
   revalidatePath(`/invoices/${invoiceId}`);
   return;
 }
 
 export async function recordPaymentAction(formData: FormData) {
+  const actor = await requireActor();
   const parsed = z.object({
     invoiceId: z.string().min(1),
     amountMillimes: moneySchema,
@@ -91,7 +98,7 @@ export async function recordPaymentAction(formData: FormData) {
   if (!parsed.success) return;
 
   await useCases.recordPayment.execute({
-    userId: demo.financeUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     invoiceId: parsed.data.invoiceId,
     amountMillimes: parsed.data.amountMillimes,
@@ -109,6 +116,7 @@ export async function recordPaymentAction(formData: FormData) {
 }
 
 export async function submitExpenseAction(formData: FormData) {
+  const actor = await requireActor();
   const parsed = z.object({
     category: z.string().min(1),
     description: z.string().min(1),
@@ -120,7 +128,7 @@ export async function submitExpenseAction(formData: FormData) {
   if (!parsed.success) return;
 
   await useCases.submitExpense.execute({
-    userId: demo.collaboratorUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     category: parsed.data.category,
     description: parsed.data.description,
@@ -135,9 +143,10 @@ export async function submitExpenseAction(formData: FormData) {
 }
 
 export async function approveExpenseAction(formData: FormData) {
+  const actor = await requireActor();
   const expenseId = String(formData.get("expenseId") ?? "");
   await useCases.approveExpense.execute({
-    actorUserId: demo.ownerUserId,
+    actorUserId: actor.userId,
     companyId: demo.companyId,
     expenseId,
     decisionDate: new Date().toISOString().slice(0, 10),
@@ -149,9 +158,10 @@ export async function approveExpenseAction(formData: FormData) {
 }
 
 export async function refuseExpenseAction(formData: FormData) {
+  const actor = await requireActor();
   const expenseId = String(formData.get("expenseId") ?? "");
   await useCases.refuseExpense.execute({
-    actorUserId: demo.ownerUserId,
+    actorUserId: actor.userId,
     companyId: demo.companyId,
     expenseId,
     decisionDate: new Date().toISOString().slice(0, 10),
@@ -163,6 +173,7 @@ export async function refuseExpenseAction(formData: FormData) {
 }
 
 export async function markExpensePaidAction(formData: FormData) {
+  const actor = await requireActor();
   const parsed = z.object({
     expenseId: z.string().min(1),
     paidDate: dateSchema,
@@ -172,7 +183,7 @@ export async function markExpensePaidAction(formData: FormData) {
   if (!parsed.success) return;
 
   await useCases.markExpensePaid.execute({
-    userId: demo.financeUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     expenseId: parsed.data.expenseId,
     paidDate: parsed.data.paidDate,
@@ -188,6 +199,7 @@ export async function markExpensePaidAction(formData: FormData) {
 }
 
 export async function createPartyAction(formData: FormData) {
+  const actor = await requireActor();
   const parsed = z.object({
     type: z.enum(["customer", "supplier"]),
     name: z.string().min(1),
@@ -199,7 +211,7 @@ export async function createPartyAction(formData: FormData) {
   if (!parsed.success) return;
 
   await useCases.createParty.execute({
-    userId: demo.ownerUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     type: parsed.data.type,
     name: parsed.data.name,
@@ -213,11 +225,12 @@ export async function createPartyAction(formData: FormData) {
 }
 
 export async function setOpeningBalanceAction(formData: FormData) {
+  const actor = await requireActor();
   const amountMillimes = z.coerce.number().int().safeParse(formData.get("amountMillimes"));
   if (!amountMillimes.success) return;
 
   await useCases.setOpeningBalance.execute({
-    userId: demo.ownerUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     amountMillimes: amountMillimes.data,
   });
@@ -229,6 +242,7 @@ export async function setOpeningBalanceAction(formData: FormData) {
 }
 
 export async function recordAdjustmentAction(formData: FormData) {
+  const actor = await requireActor();
   const parsed = z.object({
     amountMillimes: z.coerce.number().int(),
     movementDate: dateSchema,
@@ -238,7 +252,7 @@ export async function recordAdjustmentAction(formData: FormData) {
   if (!parsed.success) return;
 
   await useCases.recordAdjustment.execute({
-    userId: demo.ownerUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     amountMillimes: parsed.data.amountMillimes,
     movementDate: parsed.data.movementDate,
@@ -252,6 +266,7 @@ export async function recordAdjustmentAction(formData: FormData) {
 }
 
 export async function createScenarioAction(formData: FormData) {
+  const actor = await requireActor();
   const parsed = z.object({
     name: z.string().min(1),
     baseReferenceDate: dateSchema,
@@ -260,7 +275,7 @@ export async function createScenarioAction(formData: FormData) {
   if (!parsed.success) return;
 
   const scenario = await useCases.createScenario.execute({
-    userId: demo.ownerUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     name: parsed.data.name,
     baseReferenceDate: parsed.data.baseReferenceDate,
@@ -271,12 +286,13 @@ export async function createScenarioAction(formData: FormData) {
 }
 
 export async function addHypothesisAction(formData: FormData) {
+  const actor = await requireActor();
   const type = String(formData.get("type") ?? "");
   const scenarioId = String(formData.get("scenarioId") ?? "");
 
   if (type === "client_delay") {
     await useCases.addHypothesis.execute({
-      userId: demo.ownerUserId,
+      userId: actor.userId,
       companyId: demo.companyId,
       scenarioId,
       hypothesis: {
@@ -287,7 +303,7 @@ export async function addHypothesisAction(formData: FormData) {
     });
   } else if (type === "new_expense") {
     await useCases.addHypothesis.execute({
-      userId: demo.ownerUserId,
+      userId: actor.userId,
       companyId: demo.companyId,
       scenarioId,
       hypothesis: {
@@ -300,7 +316,7 @@ export async function addHypothesisAction(formData: FormData) {
     });
   } else {
     await useCases.addHypothesis.execute({
-      userId: demo.ownerUserId,
+      userId: actor.userId,
       companyId: demo.companyId,
       scenarioId,
       hypothesis: {
@@ -318,6 +334,7 @@ export async function addHypothesisAction(formData: FormData) {
 }
 
 export async function createRetainerAction(formData: FormData) {
+  const actor = await requireActor();
   const parsed = z.object({
     customerId: z.string().min(1),
     name: z.string().min(1),
@@ -329,7 +346,7 @@ export async function createRetainerAction(formData: FormData) {
   if (!parsed.success) return;
 
   await useCases.createRetainer.execute({
-    userId: demo.ownerUserId,
+    userId: actor.userId,
     companyId: demo.companyId,
     customerId: parsed.data.customerId,
     name: parsed.data.name,
@@ -343,8 +360,9 @@ export async function createRetainerAction(formData: FormData) {
 }
 
 export async function generateRetainerInvoicesAction(formData: FormData) {
+  const actor = await requireActor();
   const asOfDate = String(formData.get("asOfDate") ?? new Date().toISOString().slice(0, 10));
-  await useCases.generateRetainerInvoices.execute({ userId: demo.ownerUserId, companyId: demo.companyId, asOfDate });
+  await useCases.generateRetainerInvoices.execute({ userId: actor.userId, companyId: demo.companyId, asOfDate });
   revalidatePath("/invoices");
   revalidatePath("/retainers");
   revalidatePath("/forecast");
