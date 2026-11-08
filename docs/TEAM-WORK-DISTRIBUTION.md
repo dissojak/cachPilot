@@ -76,3 +76,5 @@ echo done
 ## Status
 
 - Adem: 60 0.000000oundation complete and pushed.
+
+- Adem: auth integration and pages complete.
