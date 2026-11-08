@@ -72,15 +72,11 @@ export class ChangeMemberRole {
       );
     }
 
-    // 5. Create the updated membership
-    const updated = Membership.create(
+    await this.memberships.updateRole(
       targetId,
       companyId,
       input.role
     );
-
-    // 6. Save to the repository
-    await this.memberships.save(updated);
 
     return {
       userId: input.userId,

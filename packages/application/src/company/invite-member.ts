@@ -75,8 +75,7 @@ export class InviteMember {
       input.role
     );
 
-    // 5. Save the membership
-    await this.memberships.save(membership);
+    await this.memberships.create(membership);
 
     return {
       userId: input.userId,

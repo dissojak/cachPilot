@@ -130,9 +130,88 @@ console.log(
     );
   }
 
-  async remove(
+  
+async remove(
+  userId: UserId,
+  companyId: CompanyId
+): Promise<void> {
+  await connectDb();
+
+  // Validate MongoDB ObjectIds
+  if (
+    !mongoose.isObjectIdOrHexString(userId.value) ||
+    !mongoose.isObjectIdOrHexString(companyId.value)
+  ) {
+    throw new Error(
+      "Invalid MongoDB Membership IDs"
+    );
+  }
+
+  // Delete only non-owner memberships
+  const result = await MembershipModel.deleteOne({
+    userId: new mongoose.Types.ObjectId(
+      userId.value
+    ),
+    companyId: new mongoose.Types.ObjectId(
+      companyId.value
+    ),
+    role: {
+      $in: ["finance_manager", "collaborator"],
+    },
+  });
+
+  if (result.deletedCount !== 1) {
+    throw new Error(
+      "Membership not found or protected from removal"
+    );
+  }
+}
+
+  // Create a membership without overwriting existing members
+  async create(membership: Membership): Promise<void> {
+    await connectDb();
+
+    const userId = membership.userId.value;
+    const companyId = membership.companyId.value;
+
+    if (
+      !mongoose.isObjectIdOrHexString(userId) ||
+      !mongoose.isObjectIdOrHexString(companyId)
+    ) {
+      throw new Error("Invalid MongoDB Membership IDs");
+    }
+
+    try {
+      await MembershipModel.create([
+        {
+          userId: new mongoose.Types.ObjectId(userId),
+          companyId: new mongoose.Types.ObjectId(companyId),
+          role: membership.role,
+        },
+      ], {
+        session: currentMongoSession() ?? undefined,
+      });
+    } catch (error) {
+      // MongoDB duplicate-key error
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === 11000
+      ) {
+        throw new Error(
+          "User is already a member of this company"
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  // Update only collaborator or finance manager memberships
+  async updateRole(
     userId: UserId,
-    companyId: CompanyId
+    companyId: CompanyId,
+    role: "finance_manager" | "collaborator"
   ): Promise<void> {
     await connectDb();
 
@@ -140,20 +219,40 @@ console.log(
       !mongoose.isObjectIdOrHexString(userId.value) ||
       !mongoose.isObjectIdOrHexString(companyId.value)
     ) {
-      throw new Error(
-        "Invalid MongoDB Membership IDs"
-      );
+      throw new Error("Invalid MongoDB Membership IDs");
     }
 
-    await MembershipModel.deleteOne({
-      userId: new mongoose.Types.ObjectId(
-        userId.value
-      ),
-      companyId: new mongoose.Types.ObjectId(
-        companyId.value
-      ),
-    });
+    const result = await MembershipModel.updateOne(
+      {
+        userId: new mongoose.Types.ObjectId(userId.value),
+        companyId: new mongoose.Types.ObjectId(
+          companyId.value
+        ),
+
+        // An owner cannot be modified
+        role: {
+          $in: ["finance_manager", "collaborator"],
+        },
+      },
+      {
+        $set: {
+          role,
+        },
+      },
+      {
+        runValidators: true,
+        upsert: false,
+        session: currentMongoSession(),
+      }
+    );
+
+    if (result.matchedCount !== 1) {
+      throw new Error(
+        "Membership not found or owner is protected"
+      );
+    }
   }
+
 
   private toDomain(document: {
     userId: mongoose.Types.ObjectId;

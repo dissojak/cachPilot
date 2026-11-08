@@ -73,10 +73,54 @@ export class InMemoryMembershipRepository implements MembershipRepository {
   async save(membership: Membership) { this.items.set(this.key(membership.userId, membership.companyId), membership); }
   async remove(userId: UserId, companyId: CompanyId) { this.items.delete(this.key(userId, companyId)); }
   
-async listByUser(userId: UserId): Promise<Membership[]> {
-  return [...this.items.values()].filter(
-    (membership) => membership.userId.equals(userId)
+  async listByUser(userId: UserId): Promise<Membership[]> {
+    return [...this.items.values()].filter(
+      (membership) => membership.userId.equals(userId)
+    );
+  }
+  
+async create(membership: Membership): Promise<void> {
+  const key = this.key(
+    membership.userId,
+    membership.companyId
   );
+
+  if (this.items.has(key)) {
+    throw new Error(
+      "User is already a member of this company"
+    );
+  }
+
+  this.items.set(key, membership);
 }
+
+async updateRole(
+  userId: UserId,
+  companyId: CompanyId,
+  role: "finance_manager" | "collaborator"
+): Promise<void> {
+  const key = this.key(userId, companyId);
+
+  const existing = this.items.get(key);
+
+  if (!existing) {
+    throw new Error("Membership not found");
+  }
+
+  if (existing.role === "owner") {
+    throw new Error(
+      "Owner role cannot be changed"
+    );
+  }
+
+  const updated = Membership.create(
+    userId,
+    companyId,
+    role
+  );
+
+  this.items.set(key, updated);
+}
+
 
 }

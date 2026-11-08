@@ -1,4 +1,4 @@
-import { Company, User, Party, Invoice, Payment, Expense, CashMovement, Scenario, Retainer } from "@cashpilot/domain";
+import { Membership ,Company, User, Party, Invoice, Payment, Expense, CashMovement, Scenario, Retainer } from "@cashpilot/domain";
 import { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId } from "@cashpilot/domain";
 import {
   CompanyRepository,
@@ -15,7 +15,7 @@ import {
   AuditLogEntry,
   OAuthIdentity,
 } from "@cashpilot/application";
-import { Membership } from "@cashpilot/domain";
+import {  } from "@cashpilot/domain";
 
 export class InMemoryCompanyRepository implements CompanyRepository {
   private readonly items = new Map<string, Company>();
@@ -67,6 +67,49 @@ async listByUser(userId: UserId): Promise<Membership[]> {
   return [...this.items.values()].filter(
     (membership) => membership.userId.equals(userId)
   );
+}
+
+async create(membership: Membership): Promise<void> {
+  const key = this.key(
+    membership.userId,
+    membership.companyId
+  );
+
+  if (this.items.has(key)) {
+    throw new Error(
+      "User is already a member of this company"
+    );
+  }
+
+  this.items.set(key, membership);
+}
+
+async updateRole(
+  userId: UserId,
+  companyId: CompanyId,
+  role: "finance_manager" | "collaborator"
+): Promise<void> {
+  const key = this.key(userId, companyId);
+
+  const existing = this.items.get(key);
+
+  if (!existing) {
+    throw new Error("Membership not found");
+  }
+
+  if (existing.role === "owner") {
+    throw new Error(
+      "Owner role cannot be changed"
+    );
+  }
+
+  const updated = Membership.create(
+    userId,
+    companyId,
+    role
+  );
+
+  this.items.set(key, updated);
 }
 
 }
