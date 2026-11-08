@@ -218,8 +218,28 @@ export const MembershipModel: Model<MembershipRecord> =
   model<MembershipRecord>(
     "Membership",
     membershipSchema
-  );export const PartyModel = models.Party || model("Party", partySchema);
-export const InvoiceModel = models.Invoice || model("Invoice", invoiceSchema);
+  );
+type PartyRecord = InferSchemaType<
+  typeof partySchema
+>;
+
+export const PartyModel: Model<PartyRecord> =
+  (models.Party as Model<PartyRecord> | undefined) ??
+  model<PartyRecord>("Party", partySchema);
+
+
+type InvoiceRecord = InferSchemaType<
+  typeof invoiceSchema
+>;
+
+invoiceSchema.index(
+  { companyId: 1, number: 1 },
+  { unique: true }
+);
+
+export const InvoiceModel: Model<InvoiceRecord> =
+  (models.Invoice as Model<InvoiceRecord> | undefined) ??
+  model<InvoiceRecord>("Invoice", invoiceSchema);
 export const PaymentModel = models.Payment || model("Payment", paymentSchema);
 export const ExpenseModel = models.Expense || model("Expense", expenseSchema);
 export const CashMovementModel = models.CashMovement || model("CashMovement", cashMovementSchema);

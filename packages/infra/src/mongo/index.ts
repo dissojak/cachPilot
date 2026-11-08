@@ -10,3 +10,9 @@ export { MongoMembershipRepository }
 
 export { MongoTransactionManager }
   from "./mongo-transaction-manager";
+export {
+  MongoPartyRepository,
+} from "./mongo-party-repository";
+export {
+  MongoInvoiceRepository,
+} from "./mongo-invoice-repository";

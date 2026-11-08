@@ -1,8 +1,17 @@
-import { CompanyId, UserId, Party } from "@cashpilot/domain";
-import { PartyRepository } from "../ports/party-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import {
+  CompanyId,
+  UserId,
+  PartyId,
+  Party,
+  DomainError,
+  DOMAIN_ERROR_CODES,
+} from "@cashpilot/domain";
+
+import type {
+  PartyRepository,
+  MembershipRepository,
+  IdGenerator,
+} from "../ports";
 
 export interface CreatePartyInput {
   userId: string;
@@ -18,21 +27,61 @@ export class CreateParty {
   constructor(
     private readonly parties: PartyRepository,
     private readonly memberships: MembershipRepository,
+    private readonly ids?: IdGenerator
   ) {}
 
   async execute(input: CreatePartyInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    const companyId = CompanyId.from(input.companyId);
+    const userId = UserId.from(input.userId);
 
+    // 1. Vérifier l'appartenance à l'entreprise
+    const membership =
+      await this.memberships.byUserAndCompany(
+        userId,
+        companyId
+      );
+
+    if (!membership) {
+      throw new DomainError(
+        DOMAIN_ERROR_CODES.ACCESS_DENIED,
+        "You are not a member of this company"
+      );
+    }
+
+    // 2. Contrôler le rôle
+    if (
+      membership.role !== "owner" &&
+      membership.role !== "finance_manager"
+    ) {
+      throw new DomainError(
+        DOMAIN_ERROR_CODES.ACCESS_DENIED,
+        "You cannot manage customers or suppliers"
+      );
+    }
+
+    // 3. Valider les données métier
+    const name = input.name.trim();
+
+    if (name.length < 2 || name.length > 100) {
+      throw new Error("Invalid customer or supplier name");
+    }
+
+    // 4. Construire l'entité
     const party = Party.create({
-      companyId: CompanyId.from(input.companyId),
+      id: this.ids
+        ? PartyId.from(this.ids.newId())
+        : undefined,
+      companyId,
       type: input.type,
-      name: input.name,
-      email: input.email,
-      phone: input.phone,
-      address: input.address,
+      name,
+      email: input.email?.trim().toLowerCase(),
+      phone: input.phone?.trim(),
+      address: input.address?.trim(),
     });
+
+    // 5. Enregistrer via le repository
     await this.parties.save(party);
+
     return party.snapshot();
   }
 }

@@ -5,18 +5,27 @@ import {
   InviteMember,
   ChangeMemberRole,
   RemoveMember,
+  CreateParty,
+  ListParties,
+  CreateInvoiceDraft,
+  ListInvoices,
+  GetInvoice,
+  ValidateInvoice,
 } from "@cashpilot/application";
 import {
   MongoCompanyRepository,
   MongoMembershipRepository,
   MongoObjectIdGenerator,
   MongoTransactionManager,
-  MongoUserRepository
+  MongoUserRepository,
+  MongoPartyRepository,
+  MongoInvoiceRepository
 } from "@cashpilot/infra";
 import { CompanyId, UserId } from "@cashpilot/domain";
 const companyRepository =
   new MongoCompanyRepository();
-
+const invoiceRepository =
+  new MongoInvoiceRepository();
 const membershipRepository =
   new MongoMembershipRepository();
 
@@ -27,6 +36,7 @@ const transactionManager =
   new MongoTransactionManager();
 
 const userRepository = new MongoUserRepository();
+const partyRepository = new MongoPartyRepository();
 
 export const onboardingUseCases = {
   registerCompany: new RegisterCompany(
@@ -55,6 +65,39 @@ changeMemberRole: new ChangeMemberRole(
 removeMember: new RemoveMember(
   membershipRepository
 ),
+createParty: new CreateParty(
+  partyRepository,
+  membershipRepository,
+  idGenerator
+),
+
+listParties: new ListParties(
+  partyRepository,
+  membershipRepository
+),
+
+createInvoiceDraft: new CreateInvoiceDraft(
+  invoiceRepository,
+  membershipRepository,
+  partyRepository,
+  idGenerator
+),
+
+listInvoices: new ListInvoices(
+  invoiceRepository,
+  membershipRepository
+),
+
+getInvoice: new GetInvoice(
+  invoiceRepository,
+  membershipRepository
+),
+
+validateInvoice: new ValidateInvoice(
+  invoiceRepository,
+  membershipRepository
+),
+
 };
 
 export async function getCreatedCompanyForUser(

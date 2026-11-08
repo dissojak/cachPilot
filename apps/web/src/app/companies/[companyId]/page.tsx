@@ -91,6 +91,38 @@ export default async function CompanyWorkspacePage({
           >
             Team Members
           </Link>
+          
+<Link
+  href={`/companies/${companyId}/parties`}
+  style={{
+    display: "inline-block",
+    padding: "12px 20px",
+    borderRadius: 12,
+    background: "#E0EDE5",
+    color: "#1F6B4E",
+    textDecoration: "none",
+    fontWeight: 600,
+  }}
+>
+  Customers & Suppliers
+</Link>
+
+<Link
+  href={`/companies/${companyId}/invoices`}
+  style={{
+    display: "inline-block",
+    padding: "12px 20px",
+    borderRadius: 12,
+    background: "#E0EDE5",
+    color: "#1F6B4E",
+    textDecoration: "none",
+    fontWeight: 600,
+  }}
+>
+  Invoices
+</Link>
+
+
         </div>
       </section>
     </main>
