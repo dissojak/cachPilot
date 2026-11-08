@@ -1,13 +1,16 @@
-
-import { RegisterCompany } from "@cashpilot/application";
-import { CompanyId, UserId } from "@cashpilot/domain";
+// Import avec RegisterCompany et UpdateCompany
+import {
+  RegisterCompany,
+  GetCompany,
+  UpdateCompany,
+} from "@cashpilot/application";
 import {
   MongoCompanyRepository,
   MongoMembershipRepository,
   MongoObjectIdGenerator,
   MongoTransactionManager,
 } from "@cashpilot/infra";
-
+import { CompanyId, UserId } from "@cashpilot/domain";
 const companyRepository =
   new MongoCompanyRepository();
 
@@ -27,6 +30,15 @@ export const onboardingUseCases = {
     idGenerator,
     transactionManager
   ),
+
+  updateCompany: new UpdateCompany(
+    companyRepository,
+    membershipRepository
+  ),
+  getCompany: new GetCompany(
+  companyRepository,
+  membershipRepository
+),
 };
 
 export async function getCreatedCompanyForUser(
