@@ -7,4 +7,5 @@ export interface MembershipRepository {
   listByCompany(companyId: CompanyId): Promise<Membership[]>;
   save(membership: Membership): Promise<void>;
   remove(userId: UserId, companyId: CompanyId): Promise<void>;
+  listByUser(userId: UserId): Promise<Membership[]>;
 }

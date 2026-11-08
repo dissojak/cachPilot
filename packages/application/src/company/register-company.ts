@@ -1,10 +1,17 @@
-import { Company } from "@cashpilot/domain";
-import { CompanyId } from "@cashpilot/domain";
-import { Membership } from "@cashpilot/domain";
-import { Money } from "@cashpilot/domain";
-import { CompanyRepository } from "../ports/company-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { UserId } from "@cashpilot/domain";
+
+import {
+  Company,
+  CompanyId,
+  Membership,
+  Money,
+  UserId,
+} from "@cashpilot/domain";
+import type { TransactionManager } from "../ports";
+import type {
+  CompanyRepository,
+  MembershipRepository,
+  IdGenerator,
+} from "../ports";
 
 export interface RegisterCompanyInput {
   ownerUserId: string;
@@ -15,25 +22,44 @@ export interface RegisterCompanyInput {
 
 export class RegisterCompany {
   constructor(
-    private readonly companies: CompanyRepository,
-    private readonly memberships: MembershipRepository,
-  ) {}
+  private readonly companies: CompanyRepository,
+  private readonly memberships: MembershipRepository,
+  private readonly ids?: IdGenerator,
+  private readonly transactions?: TransactionManager,
+) {}
 
-  async execute(input: RegisterCompanyInput): Promise<{ companyId: string }> {
+
+async execute(
+  input: RegisterCompanyInput
+): Promise<{ companyId: string }> {
+  const work = async () => {
     const company = Company.create({
+      id: this.ids
+        ? CompanyId.from(this.ids.newId())
+        : undefined,
       name: input.name,
       sector: input.sector,
-      openingBalance: Money.of(input.openingBalanceMillimes),
+      openingBalance: Money.of(
+        input.openingBalanceMillimes
+      ),
     });
+
     await this.companies.save(company);
 
     const membership = Membership.create(
       UserId.from(input.ownerUserId),
       company.id,
-      "owner",
+      "owner"
     );
+
     await this.memberships.save(membership);
 
     return { companyId: company.id.value };
-  }
+  };
+
+  return this.transactions
+    ? this.transactions.run(work)
+    : work();
+}
+
 }

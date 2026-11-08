@@ -5,6 +5,7 @@ import { UpdateCompany } from "./update-company";
 import { InviteMember } from "./invite-member";
 import { ChangeMemberRole } from "./change-member-role";
 import { RemoveMember } from "./remove-member";
+import { CompanyId, UserId } from "@cashpilot/domain";
 import {
   InMemoryCompanyRepository,
   InMemoryMembershipRepository,
@@ -80,7 +81,7 @@ describe("company use cases", () => {
       sector: "agency",
       openingBalanceMillimes: 5000000,
     });
-
+    
     const user = User.fromOAuth({
       email: "member@cashpilot.demo",
       name: "Member",
@@ -111,5 +112,6 @@ describe("company use cases", () => {
 
     const removed = await memberships.byUserAndCompany(user.id, (await import("@cashpilot/domain")).CompanyId.from(registered.companyId));
     expect(removed).toBeNull();
+    
   });
 });

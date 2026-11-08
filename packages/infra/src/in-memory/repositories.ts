@@ -62,6 +62,13 @@ export class InMemoryMembershipRepository implements MembershipRepository {
   async listByCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
   async save(membership: Membership) { this.items.set(this.key(membership.userId, membership.companyId), membership); }
   async remove(userId: UserId, companyId: CompanyId) { this.items.delete(this.key(userId, companyId)); }
+  
+async listByUser(userId: UserId): Promise<Membership[]> {
+  return [...this.items.values()].filter(
+    (membership) => membership.userId.equals(userId)
+  );
+}
+
 }
 
 export class InMemoryPartyRepository implements PartyRepository {

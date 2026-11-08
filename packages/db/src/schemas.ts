@@ -198,15 +198,27 @@ userSchema.index(
   { email: 1 },
   { unique: true }
 );
-export const CompanyModel = models.Company || model("Company", companySchema);
+type CompanyRecord = InferSchemaType<typeof companySchema>;
 
+export const CompanyModel: Model<CompanyRecord> =
+  (models.Company as Model<CompanyRecord> | undefined) ??
+  model<CompanyRecord>("Company", companySchema);
 type UserRecord = InferSchemaType<typeof userSchema>;
 
 export const UserModel: Model<UserRecord> =
   (models.User as Model<UserRecord> | undefined) ??
   model<UserRecord>("User", userSchema);
-export const MembershipModel = models.Membership || model("Membership", membershipSchema);
-export const PartyModel = models.Party || model("Party", partySchema);
+type MembershipRecord =
+  InferSchemaType<typeof membershipSchema>;
+
+export const MembershipModel: Model<MembershipRecord> =
+  (models.Membership as
+    | Model<MembershipRecord>
+    | undefined) ??
+  model<MembershipRecord>(
+    "Membership",
+    membershipSchema
+  );export const PartyModel = models.Party || model("Party", partySchema);
 export const InvoiceModel = models.Invoice || model("Invoice", invoiceSchema);
 export const PaymentModel = models.Payment || model("Payment", paymentSchema);
 export const ExpenseModel = models.Expense || model("Expense", expenseSchema);

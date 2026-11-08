@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 type MongooseCache = {
@@ -9,22 +10,48 @@ const globalForMongoose = globalThis as typeof globalThis & {
   mongooseCache?: MongooseCache;
 };
 
-const cache = globalForMongoose.mongooseCache ?? {
-  conn: null,
-  promise: null,
-};
+const cache: MongooseCache =
+  globalForMongoose.mongooseCache ?? {
+    conn: null,
+    promise: null,
+  };
 
 globalForMongoose.mongooseCache = cache;
 
-export async function connectDb() {
-  if (cache.conn) return cache.conn;
+export async function connectDb(): Promise<typeof mongoose> {
+  if (cache.conn?.connection.readyState === 1) {
+    return cache.conn;
+  }
 
   const uri = process.env.DATABASE_URL;
-  if (!uri) throw new Error("DATABASE_URL is required");
 
-  cache.promise ??= mongoose.connect(uri);
-  cache.conn = await cache.promise;
-  return cache.conn;
+  if (!uri) {
+    throw new Error("DATABASE_URL is required");
+  }
+
+  if (!cache.promise) {
+    cache.promise = mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 10000,
+    });
+  }
+
+  try {
+    const connection = await cache.promise;
+
+    cache.conn = connection;
+
+    return connection;
+  } catch (error) {
+    cache.conn = null;
+    cache.promise = null;
+
+    console.error(
+      "[MONGODB] Connection failed:",
+      error
+    );
+
+    throw error;
+  }
 }
 
 export { mongoose };
