@@ -49,24 +49,49 @@ export default async function CompanyWorkspacePage({
 
         <p>Company workspace is ready.</p>
 
-        {/* Company Settings - Only Owner */}
-        {actor.role === "owner" && (
+        {/* Boutons de gestion */}
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            marginTop: 24,
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Company Settings : uniquement Owner */}
+          {actor.role === "owner" && (
+            <Link
+              href={`/companies/${companyId}/settings`}
+              style={{
+                display: "inline-block",
+                padding: "12px 20px",
+                borderRadius: 12,
+                background: "#1F6B4E",
+                color: "white",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              Company Settings
+            </Link>
+          )}
+
+          {/* Team Members : tous les membres */}
           <Link
-            href={`/companies/${companyId}/settings`}
+            href={`/companies/${companyId}/members`}
             style={{
               display: "inline-block",
-              marginTop: 24,
               padding: "12px 20px",
               borderRadius: 12,
-              background: "#1F6B4E",
-              color: "white",
+              background: "#E0EDE5",
+              color: "#1F6B4E",
               textDecoration: "none",
               fontWeight: 600,
             }}
           >
-            Company Settings
+            Team Members
           </Link>
-        )}
+        </div>
       </section>
     </main>
   );

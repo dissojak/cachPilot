@@ -11,6 +11,7 @@ import {
   MongoTransactionManager,
 } from "@cashpilot/infra";
 import { CompanyId, UserId } from "@cashpilot/domain";
+import { MongoUserRepository } from "@cashpilot/infra";
 const companyRepository =
   new MongoCompanyRepository();
 
@@ -103,6 +104,37 @@ export async function getUserCompanyMemberships(
         item !== null
     )
   );
+  
 }
+
+const userRepository = new MongoUserRepository();
+
+export async function getCompanyMembers(
+  companyId: string
+) {
+  const memberships =
+    await membershipRepository.listByCompany(
+      CompanyId.from(companyId)
+    );
+
+  return Promise.all(
+    memberships.map(async (membership) => {
+      const user = await userRepository.byId(
+        membership.userId
+      );
+
+      const userData = user?.snapshot();
+
+      return {
+        userId: membership.userId.value,
+        companyId: membership.companyId.value,
+        role: membership.role,
+        name: userData?.name ?? "Unknown user",
+        email: userData?.email ?? "Unknown email",
+      };
+    })
+  );
+}
+
 
 
