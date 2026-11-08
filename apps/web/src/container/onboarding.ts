@@ -76,11 +76,14 @@ export async function getUserCompanyMemberships(
         return null;
       }
 
-      return {
-        companyId: company.id.value,
-        companyName: company.name,
-        role: membership.role,
-      };
+      
+    return {
+      companyId: company.id.value,
+      companyName: company.name,
+      sector: company.sector,
+      role: membership.role,
+    };
+
     })
   ).then((results) =>
     results.filter(

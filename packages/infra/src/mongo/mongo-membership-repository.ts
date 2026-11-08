@@ -1,4 +1,3 @@
-
 import {
   connectDb,
   MembershipModel,
@@ -22,34 +21,55 @@ import { currentMongoSession } from "./mongo-transaction-context";
 export class MongoMembershipRepository
   implements MembershipRepository {
 
-  async byUserAndCompany(
-    userId: UserId,
-    companyId: CompanyId
-  ): Promise<Membership | null> {
-    await connectDb();
+  
+async byUserAndCompany(
+  userId: UserId,
+  companyId: CompanyId
+): Promise<Membership | null> {
+  await connectDb();
+  
+console.log(
+  "[MONGODB] Default connection:",
+  mongoose.connection.readyState
+);
 
-    if (
-      !mongoose.isObjectIdOrHexString(userId.value) ||
-      !mongoose.isObjectIdOrHexString(companyId.value)
-    ) {
-      return null;
-    }
+console.log(
+  "[MONGODB] Membership connection:",
+  MembershipModel.db.readyState
+);
 
-    const document = await MembershipModel.findOne({
-      userId: new mongoose.Types.ObjectId(
-        userId.value
-      ),
-      companyId: new mongoose.Types.ObjectId(
-        companyId.value
-      ),
-    }).lean();
+console.log(
+  "[MONGODB] Same connection:",
+  MembershipModel.db === mongoose.connection
+);
 
-    if (!document) {
-      return null;
-    }
 
-    return this.toDomain(document);
+  if (
+    !mongoose.isObjectIdOrHexString(userId.value) ||
+    !mongoose.isObjectIdOrHexString(companyId.value)
+  ) {
+    return null;
   }
+
+  console.log("[MEMBERSHIP] User:", userId.value);
+  console.log("[MEMBERSHIP] Company:", companyId.value);
+  console.log(
+    "[MEMBERSHIP] Model connection state:",
+    MembershipModel.db.readyState
+  );
+
+  const document = await MembershipModel.findOne({
+    userId: new mongoose.Types.ObjectId(userId.value),
+    companyId: new mongoose.Types.ObjectId(companyId.value),
+  }).lean();
+
+  if (!document) {
+    return null;
+  }
+
+  return this.toDomain(document);
+}
+
 
   async listByCompany(
     companyId: CompanyId

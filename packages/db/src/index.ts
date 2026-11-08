@@ -1,7 +1,7 @@
-
 import mongoose from "mongoose";
 
 type MongooseCache = {
+  instance: typeof mongoose | null;
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
 };
@@ -12,6 +12,7 @@ const globalForMongoose = globalThis as typeof globalThis & {
 
 const cache: MongooseCache =
   globalForMongoose.mongooseCache ?? {
+    instance: null,
     conn: null,
     promise: null,
   };
@@ -19,14 +20,24 @@ const cache: MongooseCache =
 globalForMongoose.mongooseCache = cache;
 
 export async function connectDb(): Promise<typeof mongoose> {
-  if (cache.conn?.connection.readyState === 1) {
-    return cache.conn;
-  }
-
   const uri = process.env.DATABASE_URL;
 
   if (!uri) {
     throw new Error("DATABASE_URL is required");
+  }
+
+  // Ne pas réutiliser une connexion provenant
+  // d'une autre instance Mongoose.
+  if (cache.instance !== mongoose) {
+    cache.instance = mongoose;
+    cache.conn = null;
+    cache.promise = null;
+  }
+
+  // La connexion de cette instance est déjà active.
+  if (mongoose.connection.readyState === 1) {
+    cache.conn = mongoose;
+    return mongoose;
   }
 
   if (!cache.promise) {
@@ -38,7 +49,17 @@ export async function connectDb(): Promise<typeof mongoose> {
   try {
     const connection = await cache.promise;
 
+    if (connection.connection.readyState !== 1) {
+      throw new Error(
+        "MongoDB connection is not ready"
+      );
+    }
+
     cache.conn = connection;
+
+    console.log(
+      "[MONGODB] Connected successfully"
+    );
 
     return connection;
   } catch (error) {
