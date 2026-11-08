@@ -82,3 +82,5 @@ echo done
 - Adem: auth, pages, tests, and delivery docs complete.
 
 - Adem: README, Playwright smoke test, and Vercel config added.
+
+- Adem: fixed sign-in flow (v5 server action), PDF export auth guard, and tsbuildinfo hygiene.

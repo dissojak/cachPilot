@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@cashpilot/infra": "workspace:*",
+    "@playwright/test": "1.65.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "eslint": "^8.57.1",

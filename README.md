@@ -44,6 +44,13 @@ pnpm dev
 
 Open `http://localhost:3000`.
 
+### Google OAuth redirect URIs
+
+Add these "Authorized redirect URIs" to the Google OAuth client (Google Cloud Console → Credentials):
+
+- Dev: `http://localhost:3000/api/auth/callback/google`
+- Production: `https://<your-domain>/api/auth/callback/google`
+
 ## Demo accounts
 
 OAuth sign-in creates the user on first login. The seeded demo company is `Atlas Studio`.

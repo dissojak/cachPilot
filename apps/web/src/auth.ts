@@ -7,6 +7,10 @@ const config: NextAuthConfig = {
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 7 },
   trustHost: true,
   secret: process.env.AUTH_SECRET,
+  logger: {
+    warn: (msg) => console.warn("[authjs-warn]", msg),
+    error: (msg) => console.error("[authjs-error]", msg),
+  },
 };
 
 const nextAuth = NextAuth(config);
