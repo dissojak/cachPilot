@@ -80,3 +80,5 @@ echo done
 - Adem: auth integration and pages complete.
 
 - Adem: auth, pages, tests, and delivery docs complete.
+
+- Adem: README, Playwright smoke test, and Vercel config added.
