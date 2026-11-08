@@ -13,6 +13,7 @@ import {
   RetainerRepository,
   AuditLogRepository,
   AuditLogEntry,
+  OAuthIdentity,
 } from "@cashpilot/application";
 import { Membership } from "@cashpilot/domain";
 
@@ -27,6 +28,31 @@ export class InMemoryUserRepository implements UserRepository {
   async byId(id: UserId) { return this.items.get(id.value) ?? null; }
   async byEmail(email: string) { return [...this.items.values()].find((user) => user.email === email) ?? null; }
   async save(user: User) { this.items.set(user.id.value, user); }
+  async resolveOAuthIdentity(
+  identity: OAuthIdentity
+): Promise<User> {
+  const existing = [...this.items.values()].find((user) => {
+    const data = user.snapshot();
+
+    return (
+      data.oauthProvider === identity.provider &&
+      data.oauthSubject === identity.subject
+    );
+  });
+
+  if (existing) return existing;
+
+  const user = User.fromOAuth({
+    email: identity.email,
+    name: identity.name,
+    provider: identity.provider,
+    subject: identity.subject,
+  });
+
+  await this.save(user);
+
+  return user;
+}
 }
 
 export class InMemoryMembershipRepository implements MembershipRepository {

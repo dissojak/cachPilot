@@ -1,5 +1,10 @@
-import { Schema, model, models } from "mongoose";
-
+import {
+  Schema,
+  model,
+  models,
+  type Model,
+  type InferSchemaType,
+} from "mongoose";
 const moneyField = { type: Number, required: true };
 
 const companySchema = new Schema(
@@ -184,8 +189,22 @@ const auditLogSchema = new Schema(
   { timestamps: true },
 );
 
+userSchema.index(
+  { oauthProvider: 1, oauthSubject: 1 },
+  { unique: true }
+);
+
+userSchema.index(
+  { email: 1 },
+  { unique: true }
+);
 export const CompanyModel = models.Company || model("Company", companySchema);
-export const UserModel = models.User || model("User", userSchema);
+
+type UserRecord = InferSchemaType<typeof userSchema>;
+
+export const UserModel: Model<UserRecord> =
+  (models.User as Model<UserRecord> | undefined) ??
+  model<UserRecord>("User", userSchema);
 export const MembershipModel = models.Membership || model("Membership", membershipSchema);
 export const PartyModel = models.Party || model("Party", partySchema);
 export const InvoiceModel = models.Invoice || model("Invoice", invoiceSchema);

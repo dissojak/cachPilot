@@ -1,1 +1,1 @@
-export {};
+export { MongoUserRepository } from "./mongo-user-repository";

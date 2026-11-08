@@ -8,11 +8,12 @@
   },
   "dependencies": {
     "@cashpilot/application": "workspace:*",
-    "@cashpilot/domain": "workspace:*",
-    "@cashpilot/db": "workspace:*"
+    "@cashpilot/db": "workspace:*",
+    "@cashpilot/domain": "workspace:*"
   },
   "devDependencies": {
     "@cashpilot/config": "workspace:*",
+    "@types/node": "^26.6.6",
     "typescript": "^5.6.0",
     "vitest": "^2.0.0"
   },

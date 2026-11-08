@@ -12,12 +12,58 @@ export class InMemoryCompanyRepository implements CompanyRepository {
   async save(company: Company) { this.items.set(company.id.value, company); }
 }
 
+
 export class InMemoryUserRepository implements UserRepository {
   private readonly items = new Map<string, User>();
-  async byId(id: UserId) { return this.items.get(id.value) ?? null; }
-  async byEmail(email: string) { return [...this.items.values()].find((user) => user.email === email) ?? null; }
-  async save(user: User) { this.items.set(user.id.value, user); }
+
+  async byId(id: UserId): Promise<User | null> {
+    return this.items.get(id.value) ?? null;
+  }
+
+  async byEmail(email: string): Promise<User | null> {
+    return (
+      [...this.items.values()].find(
+        (user) => user.email === email.trim().toLowerCase()
+      ) ?? null
+    );
+  }
+
+  async save(user: User): Promise<void> {
+    this.items.set(user.id.value, user);
+  }
+
+  async resolveOAuthIdentity(identity: {
+    provider: string;
+    subject: string;
+    email: string;
+    name: string;
+  }): Promise<User> {
+    const existing = [...this.items.values()].find((user) => {
+      const data = user.snapshot();
+
+      return (
+        data.oauthProvider === identity.provider &&
+        data.oauthSubject === identity.subject
+      );
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const user = User.fromOAuth({
+      email: identity.email,
+      name: identity.name,
+      provider: identity.provider,
+      subject: identity.subject,
+    });
+
+    await this.save(user);
+
+    return user;
+  }
 }
+
 
 export class InMemoryMembershipRepository implements MembershipRepository {
   private readonly items = new Map<string, Membership>();
