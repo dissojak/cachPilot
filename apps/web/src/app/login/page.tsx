@@ -1,3 +1,4 @@
+import { signInWithGoogle } from "./actions";
 export default function LoginPage() {
   return (
     <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, position: "relative", overflow: "hidden" }}>
@@ -12,12 +13,24 @@ export default function LoginPage() {
         <p style={{ color: "#4A6256", margin: "0 0 34px", lineHeight: 1.5 }}>
           Track real cash, see shortages early, and test decisions before you make them.
         </p>
-        <button
-          type="button"
-          style={{ width: "100%", height: 52, border: 0, borderRadius: 999, background: "#1F6B4E", color: "white", fontWeight: 600, cursor: "pointer", fontSize: 16 }}
-        >
-          Continue with Google
-        </button>
+        <form action={signInWithGoogle}>
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              height: 52,
+              border: 0,
+              borderRadius: 999,
+              background: "#1F6B4E",
+              color: "white",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 16,
+            }}
+          >
+            Continue with Google
+          </button>
+        </form>
         <p style={{ color: "#7C8F83", fontSize: 13, margin: "20px 0 0" }}>
           OAuth only. No passwords are stored by CashPilot.
         </p>
