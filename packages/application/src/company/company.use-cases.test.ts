@@ -64,4 +64,36 @@ describe("company, members and sign-in", () => {
       { companyId: company.companyId, name: "Atlas Studio", role: "owner" },
     ]);
   });
+
+  // Ported from Sana's member-permissions.test.ts (feature/payment) to the current API.
+  describe("member permissions (from Sana's tests)", () => {
+    it("a collaborator cannot add, change or remove members", async () => {
+      const world = createWorld();
+      const company = await createCompany(world);
+      await expect(world.useCases.removeMember.execute({ ...company.collaborator, memberUserId: company.finance.userId }))
+        .rejects.toMatchObject({ code: "ACCESS_DENIED" });
+      await expect(world.useCases.changeMemberRole.execute({ ...company.collaborator, memberUserId: company.finance.userId, role: "collaborator" }))
+        .rejects.toMatchObject({ code: "ACCESS_DENIED" });
+      await expect(world.useCases.inviteMember.execute({ ...company.collaborator, email: "owner@demo.test", role: "collaborator" }))
+        .rejects.toMatchObject({ code: "ACCESS_DENIED" });
+    });
+
+    it("the owner of another company cannot see or touch this company's members", async () => {
+      const world = createWorld();
+      const company = await createCompany(world);
+      const other = await createCompany(world);
+      const outsider = { userId: other.owner.userId, companyId: company.companyId };
+      await expect(world.useCases.listMembers.execute(outsider)).rejects.toMatchObject({ code: "ACCESS_DENIED" });
+      await expect(world.useCases.removeMember.execute({ ...outsider, memberUserId: company.collaborator.userId }))
+        .rejects.toMatchObject({ code: "ACCESS_DENIED" });
+      expect(await world.useCases.listMembers.execute(company.owner)).toHaveLength(3);
+    });
+
+    it("adding someone who is already a member is rejected", async () => {
+      const world = createWorld();
+      const company = await createCompany(world);
+      await expect(world.useCases.inviteMember.execute({ ...company.owner, email: "collab@demo.test", role: "finance_manager" }))
+        .rejects.toMatchObject({ code: "DUPLICATE_OPERATION" });
+    });
+  });
 });
