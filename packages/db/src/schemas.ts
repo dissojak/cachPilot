@@ -228,6 +228,8 @@ const counterSchema = new Schema({
 
 companySchema.index({ name: 1 });
 userSchema.index({ email: 1 }, { unique: true });
+// From Sana's branch: one CashPilot user per OAuth identity.
+userSchema.index({ oauthProvider: 1, oauthSubject: 1 }, { unique: true });
 membershipSchema.index({ userId: 1, companyId: 1 }, { unique: true });
 partySchema.index({ companyId: 1, type: 1, name: 1 });
 invoiceSchema.index({ companyId: 1, number: 1 }, { unique: true });

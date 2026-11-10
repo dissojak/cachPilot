@@ -16,6 +16,12 @@ const config: NextAuthConfig = {
   pages: { signIn: "/login" },
   callbacks: {
     authorized: ({ auth }) => Boolean(auth?.user),
+    // From Sana's branch: expose the stable Google account id (token.sub),
+    // stored as the user's oauthSubject. E-mail alone can change.
+    session: ({ session, token }) => {
+      if (session.user && token.sub) session.user.id = token.sub;
+      return session;
+    },
   },
 };
 
