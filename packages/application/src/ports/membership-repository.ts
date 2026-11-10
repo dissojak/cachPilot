@@ -1,6 +1,6 @@
-import { Membership } from "@cashpilot/domain";
-import { UserId } from "@cashpilot/domain";
-import { CompanyId } from "@cashpilot/domain";
+import type { Membership } from "@cashpilot/domain";
+import type { UserId } from "@cashpilot/domain";
+import type { CompanyId } from "@cashpilot/domain";
 
 export interface MembershipRepository {
   byUserAndCompany(userId: UserId, companyId: CompanyId): Promise<Membership | null>;

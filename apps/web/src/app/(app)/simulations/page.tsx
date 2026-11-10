@@ -1,44 +1,42 @@
-import { useCases } from "@/container";
-import { requireActor } from "@/lib/auth-actor";
-import { date } from "@/lib/format";
 import Link from "next/link";
-import { createScenarioAction, addHypothesisAction } from "@/app/actions";
-import FadeIn from "@/components/fade-in";
+import { PageHeader, Card, EmptyState } from "@cashpilot/ui";
+import { useCases } from "@/container";
+import { requirePermission } from "@/lib/session";
+import { date } from "@/lib/format";
+import { ActionForm, Field, SubmitButton } from "@/components/form";
+import { createScenarioAction } from "./actions";
 
 export default async function SimulationsPage() {
-  const actor = await requireActor();
-  const scenarios = await useCases.listScenarios.execute({ userId: actor.userId, companyId: actor.companyId });
+  const actor = await requirePermission("simulations.use");
+  const scenarios = await useCases.listScenarios.execute(actor);
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <FadeIn>
-      <main className="shell motion-fade">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 24, marginBottom: 24 }}>
-        <div>
-          <p className="mono">Simulations</p>
-          <h1 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 40, lineHeight: "44px", margin: "8px 0 0" }}>What-if scenarios</h1>
-        </div>
-      </header>
-
-      <section className="glass motion-slide" style={{ padding: 24, marginBottom: 24 }}>
-        <form action={createScenarioAction} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-          <input name="name" placeholder="Scenario name" style={{ height: 48, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 16px" }} />
-          <input name="baseReferenceDate" type="date" style={{ height: 48, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 16px" }} />
-          <button type="submit" style={{ height: 48, borderRadius: 999, border: 0, background: "#1F6B4E", color: "white", fontWeight: 600, cursor: "pointer" }}>Create scenario</button>
-        </form>
-      </section>
-
-      <section style={{ display: "grid", gap: 12 }}>
-        {scenarios.map((scenario) => (
-          <article key={scenario.id} className="glass lift motion-pop" style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-            <div>
-              <strong style={{ display: "block", marginBottom: 4 }}>{scenario.name}</strong>
-              <span style={{ color: "#4A6256", fontSize: 13 }}>Base date {date(scenario.baseReferenceDate)} · {scenario.hypotheses.length} hypotheses</span>
-            </div>
-            <Link href={`/simulations/${scenario.id}`} style={{ color: "#1F6B4E", textDecoration: "underline", fontWeight: 600 }}>Run</Link>
-          </article>
-        ))}
-      </section>
+    <main className="shell">
+      <PageHeader eyebrow="What if?" title="Simulations" description="A scenario stores only hypotheses. It never changes your invoices, expenses or cash." />
+      <div className="grid-2">
+        <Card title="Scenarios">
+          {scenarios.length === 0
+            ? <EmptyState title="No scenario yet" text="Create one, then add a client delay, a new expense or extra income." />
+            : (
+              <div className="list">
+                {scenarios.map((scenario) => (
+                  <Link key={scenario.id} href={`/simulations/${scenario.id}`} className="alert-item" style={{ borderLeftColor: "var(--lake)" }}>
+                    <strong>{scenario.name}</strong>
+                    <small className="muted">From {date(scenario.baseReferenceDate)} · {scenario.hypotheses.length} hypothes{scenario.hypotheses.length === 1 ? "is" : "es"}</small>
+                  </Link>
+                ))}
+              </div>
+            )}
+        </Card>
+        <Card title="New scenario">
+          <ActionForm action={createScenarioAction}>
+            <Field label="Name" name="name" placeholder="Client pays 20 days late" required />
+            <Field label="Start from" name="baseReferenceDate" type="date" defaultValue={today} required />
+            <SubmitButton>Create scenario</SubmitButton>
+          </ActionForm>
+        </Card>
+      </div>
     </main>
-    </FadeIn>
   );
 }

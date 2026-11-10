@@ -1,105 +1,57 @@
 import { describe, it, expect } from "vitest";
-import { Company, User, Membership, Money, DateOnly } from "@cashpilot/domain";
-import { SubmitExpense, ApproveExpense, RefuseExpense, MarkExpensePaid } from "./index";
-import {
-  InMemoryCompanyRepository,
-  InMemoryUserRepository,
-  InMemoryMembershipRepository,
-  InMemoryExpenseRepository,
-  InMemoryCashMovementRepository,
-} from "../test/fakes";
+import { createWorld, createCompany } from "../test/world";
 
-class NoopTransactions {
-  async run<T>(work: () => Promise<T>) { return work(); }
+async function setup() {
+  const world = createWorld("2026-11-05");
+  const company = await createCompany(world);
+  const expense = await world.useCases.submitExpense.execute({
+    ...company.collaborator, category: "Software", description: "Subscription", amountMillimes: 400_000, expenseDate: "2026-11-20",
+  });
+  return { world, company, expenseId: expense.id };
 }
 
-describe("expense use cases", () => {
-  async function setup() {
-    const companies = new InMemoryCompanyRepository();
-    const users = new InMemoryUserRepository();
-    const memberships = new InMemoryMembershipRepository();
-    const expenses = new InMemoryExpenseRepository();
-    const movements = new InMemoryCashMovementRepository();
-
-    const company = Company.create({ name: "Atlas", sector: "agency", openingBalance: Money.of(5000000) });
-    await companies.save(company);
-    const owner = User.fromOAuth({ email: "owner@demo.test", name: "Owner", provider: "demo", subject: "owner" });
-    const collaborator = User.fromOAuth({ email: "collab@demo.test", name: "Collaborator", provider: "demo", subject: "collab" });
-    await users.save(owner);
-    await users.save(collaborator);
-    await memberships.save(Membership.create(owner.id, company.id, "owner"));
-    await memberships.save(Membership.create(collaborator.id, company.id, "collaborator"));
-
-    const expense = await new SubmitExpense(expenses, memberships).execute({
-      userId: collaborator.id.value,
-      companyId: company.id.value,
-      category: "Software",
-      description: "Subscription",
-      amountMillimes: 400000,
-      expenseDate: "2026-11-20",
-    });
-
-    return { company, owner, collaborator, expense, expenses, movements, memberships };
-  }
-
-  it("approves a submitted expense", async () => {
-    const ctx = await setup();
-    const approved = await new ApproveExpense(ctx.expenses, ctx.memberships).execute({
-      actorUserId: ctx.owner.id.value,
-      companyId: ctx.company.id.value,
-      expenseId: ctx.expense.id,
-      decisionDate: "2026-11-02",
-    });
-    expect(approved.status).toBe("approved");
+describe("expense approval workflow", () => {
+  it("submit → approve (owner) → pay (finance) creates one negative cash movement", async () => {
+    const { world, company, expenseId } = await setup();
+    await world.useCases.approveExpense.execute({ ...company.owner, expenseId });
+    await world.useCases.markExpensePaid.execute({ ...company.finance, expenseId, paidDate: "2026-11-05" });
+    const balance = await world.useCases.getRealBalance.execute(company.finance);
+    expect(balance.balanceMillimes).toBe(5_000_000 - 400_000);
+    await expect(world.useCases.markExpensePaid.execute({ ...company.finance, expenseId, paidDate: "2026-11-05" }))
+      .rejects.toMatchObject({ code: "EXPENSE_ALREADY_PAID" });
   });
 
-  it("refuses a submitted expense", async () => {
-    const ctx = await setup();
-    const refused = await new RefuseExpense(ctx.expenses, ctx.memberships).execute({
-      actorUserId: ctx.owner.id.value,
-      companyId: ctx.company.id.value,
-      expenseId: ctx.expense.id,
-      decisionDate: "2026-11-02",
-      reason: "Not needed",
-    });
-    expect(refused.status).toBe("refused");
+  it("criterion 3: a refused expense can never be paid", async () => {
+    const { world, company, expenseId } = await setup();
+    await world.useCases.refuseExpense.execute({ ...company.owner, expenseId, reason: "Not needed" });
+    await expect(world.useCases.markExpensePaid.execute({ ...company.finance, expenseId, paidDate: "2026-11-05" }))
+      .rejects.toMatchObject({ code: "REFUSED_EXPENSE_CANNOT_BE_PAID" });
+    expect(world.repos.movements.items).toHaveLength(1); // opening only
   });
 
-  it("blocks payment for a refused expense", async () => {
-    const ctx = await setup();
-    await new RefuseExpense(ctx.expenses, ctx.memberships).execute({
-      actorUserId: ctx.owner.id.value,
-      companyId: ctx.company.id.value,
-      expenseId: ctx.expense.id,
-      decisionDate: "2026-11-02",
-    });
-
-    await expect(new MarkExpensePaid(ctx.expenses, ctx.movements, ctx.memberships, new NoopTransactions() as any).execute({
-      userId: ctx.owner.id.value,
-      companyId: ctx.company.id.value,
-      expenseId: ctx.expense.id,
-      paidDate: "2026-11-20",
-    })).rejects.toThrow();
+  it("only the owner decides, only finance pays", async () => {
+    const { world, company, expenseId } = await setup();
+    await expect(world.useCases.approveExpense.execute({ ...company.finance, expenseId })).rejects.toMatchObject({ code: "ACCESS_DENIED" });
+    await expect(world.useCases.approveExpense.execute({ ...company.collaborator, expenseId })).rejects.toMatchObject({ code: "ACCESS_DENIED" });
+    await world.useCases.approveExpense.execute({ ...company.owner, expenseId });
+    await expect(world.useCases.markExpensePaid.execute({ ...company.owner, expenseId, paidDate: "2026-11-05" })).rejects.toMatchObject({ code: "ACCESS_DENIED" });
   });
 
-  it("creates one cash movement when an approved expense is paid", async () => {
-    const ctx = await setup();
-    await new ApproveExpense(ctx.expenses, ctx.memberships).execute({
-      actorUserId: ctx.owner.id.value,
-      companyId: ctx.company.id.value,
-      expenseId: ctx.expense.id,
-      decisionDate: "2026-11-02",
+  it("a collaborator sees only their own expenses", async () => {
+    const { world, company } = await setup();
+    const ownerExpense = await world.useCases.submitExpense.execute({
+      ...company.owner, category: "Rent", description: "Office", amountMillimes: 2_000_000, expenseDate: "2026-11-15",
     });
+    const mine = await world.useCases.listExpenses.execute(company.collaborator);
+    expect(mine.map((expense) => expense.submittedBy)).toEqual([company.collaborator.userId]);
+    expect(await world.useCases.listExpenses.execute(company.owner)).toHaveLength(2);
+    await expect(world.useCases.getExpense.execute({ ...company.collaborator, expenseId: ownerExpense.id }))
+      .rejects.toMatchObject({ code: "EXPENSE_NOT_FOUND" });
+  });
 
-    await new MarkExpensePaid(ctx.expenses, ctx.movements, ctx.memberships, new NoopTransactions() as any).execute({
-      userId: ctx.owner.id.value,
-      companyId: ctx.company.id.value,
-      expenseId: ctx.expense.id,
-      paidDate: "2026-11-20",
-    });
-
-    const movements = await ctx.movements.byCompany(ctx.company.id);
-    expect(movements).toHaveLength(1);
-    expect(movements[0]!.amountMillimes).toBe(-400000);
+  it("approval and refusal are recorded in the audit log", async () => {
+    const { world, company, expenseId } = await setup();
+    await world.useCases.approveExpense.execute({ ...company.owner, expenseId });
+    expect(world.repos.audit.items.at(-1)).toMatchObject({ action: "expense.approved", actorId: company.owner.userId });
   });
 });

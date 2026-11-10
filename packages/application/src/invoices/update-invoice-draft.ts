@@ -1,6 +1,8 @@
-import { CompanyId, UserId, PartyId, Invoice, InvoiceId, InvoiceNumber, DateOnly, Money, InvoiceLineProps } from "@cashpilot/domain";
-import { InvoiceRepository } from "../ports/invoice-repository";
-import { MembershipRepository } from "../ports/membership-repository";
+import { authorize } from "../access/authorize";
+import { CompanyId, PartyId, InvoiceId, DateOnly, Money } from "@cashpilot/domain";
+import type { InvoiceLineInput } from "@cashpilot/domain";
+import type { InvoiceRepository } from "../ports/invoice-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
 import { DomainError } from "@cashpilot/domain";
 import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
 
@@ -9,7 +11,6 @@ export interface UpdateInvoiceDraftInput {
   companyId: string;
   invoiceId: string;
   customerId?: string;
-  number?: string;
   issueDate?: string;
   dueDate?: string;
   lines?: { description: string; quantity: number; unitPriceMillimes: number }[];
@@ -22,40 +23,26 @@ export class UpdateInvoiceDraft {
   ) {}
 
   async execute(input: UpdateInvoiceDraftInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    await authorize(this.memberships, input, "invoices.manage");
 
     const invoice = await this.invoices.byId(InvoiceId.from(input.invoiceId));
     if (!invoice || !invoice.companyId.equals(CompanyId.from(input.companyId))) {
       throw new DomainError(DOMAIN_ERROR_CODES.INVOICE_NOT_FOUND, "Invoice not found");
     }
-    if (invoice.status !== "draft") {
-      throw new DomainError(DOMAIN_ERROR_CODES.INVALID_TRANSITION, "Only draft invoices can be updated");
-    }
 
-    const sourceLines = input.lines ?? invoice.lines.map((line) => ({
+    const lines: InvoiceLineInput[] | undefined = input.lines?.map((line) => ({
       description: line.description,
       quantity: line.quantity,
-      unitPriceMillimes: line.unitPrice.amount,
+      unitPrice: Money.positive(line.unitPriceMillimes),
     }));
 
-    const lines: InvoiceLineProps[] = sourceLines.map((line) => ({
-      description: line.description,
-      quantity: line.quantity,
-      unitPrice: Money.of(line.unitPriceMillimes),
-      lineTotal: Money.of(line.unitPriceMillimes * line.quantity),
-    }));
-
-    const updated = Invoice.create({
-      id: InvoiceId.from(input.invoiceId),
-      companyId: CompanyId.from(input.companyId),
-      customerId: PartyId.from(input.customerId ?? invoice.customerId.value),
-      number: InvoiceNumber.from(input.number ?? invoice.number.value),
-      issueDate: DateOnly.from(input.issueDate ?? invoice.issueDate.value),
-      dueDate: DateOnly.from(input.dueDate ?? invoice.dueDate.value),
+    invoice.reviseDraft({
+      customerId: input.customerId ? PartyId.from(input.customerId) : undefined,
+      issueDate: input.issueDate ? DateOnly.from(input.issueDate) : undefined,
+      dueDate: input.dueDate ? DateOnly.from(input.dueDate) : undefined,
       lines,
     });
-    await this.invoices.save(updated);
-    return updated.snapshot();
+    await this.invoices.save(invoice);
+    return invoice.snapshot();
   }
 }

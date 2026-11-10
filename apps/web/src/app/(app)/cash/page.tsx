@@ -1,57 +1,73 @@
+import { PageHeader, Card, Stat, EmptyState } from "@cashpilot/ui";
 import { useCases } from "@/container";
-import { requireActor } from "@/lib/auth-actor";
-import { money, date } from "@/lib/format";
-import { setOpeningBalanceAction, recordAdjustmentAction } from "@/app/actions";
-import FadeIn from "@/components/fade-in";
+import { requirePermission, can } from "@/lib/session";
+import { money, date, movementLabel } from "@/lib/format";
+import { ActionForm, Field, SubmitButton } from "@/components/form";
+import { setOpeningBalanceAction, recordAdjustmentAction } from "./actions";
 
 export default async function CashPage() {
-  const actor = await requireActor();
-  const balance = await useCases.getRealBalance.execute({ userId: actor.userId, companyId: actor.companyId });
-  const movements = await useCases.listCashMovements.execute({ userId: actor.userId, companyId: actor.companyId });
+  const actor = await requirePermission("cash.view");
+  const [balance, movements] = await Promise.all([
+    useCases.getRealBalance.execute(actor),
+    useCases.listCashMovements.execute(actor),
+  ]);
+  const today = new Date().toISOString().slice(0, 10);
+  const hasOpening = movements.some((movement) => movement.type === "opening");
+  const rows = [...movements].reverse();
 
   return (
-    <FadeIn>
-      <main className="shell motion-fade">
-      <header style={{ marginBottom: 24 }}>
-        <p className="mono">Cash</p>
-        <h1 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 40, lineHeight: "44px", margin: "8px 0 0" }}>Real cash</h1>
-      </header>
+    <main className="shell">
+      <PageHeader eyebrow="Cash" title="Real cash" description="Every realized operation is one movement. Nothing is edited or deleted: corrections are new adjustments with a reason." />
+      <div className="grid-stats">
+        <Stat label="Real balance today" value={money(balance.balanceMillimes)} tone={balance.balanceMillimes < 0 ? "danger" : "success"} />
+        <Stat label="Movements" value={String(movements.length)} note="Opening, payments received, expenses paid, adjustments" />
+      </div>
 
-      <section className="glass motion-slide" style={{ padding: 32, marginBottom: 24 }}>
-        <p className="mono">Real balance</p>
-        <div style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 56, lineHeight: "56px", fontWeight: 600, marginTop: 8 }}>{money(balance.balanceMillimes)}</div>
-      </section>
-
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
-        <form action={setOpeningBalanceAction} className="glass" style={{ padding: 24, display: "grid", gap: 12 }}>
-          <h2 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 20, margin: 0 }}>Set opening balance</h2>
-          <input name="amountMillimes" type="number" placeholder="Amount in millimes" style={{ height: 48, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 16px" }} />
-          <button type="submit" style={{ height: 44, borderRadius: 999, border: 0, background: "#1F6B4E", color: "white", fontWeight: 600, cursor: "pointer" }}>Save</button>
-        </form>
-        <form action={recordAdjustmentAction} className="glass" style={{ padding: 24, display: "grid", gap: 12 }}>
-          <h2 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 20, margin: 0 }}>Record adjustment</h2>
-          <input name="amountMillimes" type="number" placeholder="Signed amount in millimes" style={{ height: 48, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 16px" }} />
-          <input name="movementDate" type="date" style={{ height: 48, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 16px" }} />
-          <input name="reason" placeholder="Reason" style={{ height: 48, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 16px" }} />
-          <button type="submit" style={{ height: 44, borderRadius: 999, border: 0, background: "#1F6B4E", color: "white", fontWeight: 600, cursor: "pointer" }}>Record</button>
-        </form>
-      </section>
-
-      <section className="glass motion-slide" style={{ padding: 24 }}>
-        <h2 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 20, margin: "0 0 16px" }}>Movements</h2>
-        <div style={{ display: "grid", gap: 10 }}>
-          {movements.map((movement) => (
-            <div key={movement.id} style={{ padding: 12, borderRadius: 16, background: "rgba(255,255,255,0.5)", display: "flex", justifyContent: "space-between" }}>
-              <div>
-                <strong style={{ display: "block" }}>{movement.type}</strong>
-                <span style={{ color: "#4A6256", fontSize: 13 }}>{movement.reason ?? movement.sourceType} · {date(movement.movementDate)}</span>
+      <div className="grid-2">
+        <Card title="History">
+          {rows.length === 0
+            ? <EmptyState title="No movement yet" text="Record the opening balance to start tracking cash." />
+            : (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead><tr><th>Date</th><th>Type</th><th>Reason / source</th><th className="num">Amount</th></tr></thead>
+                  <tbody>
+                    {rows.map((movement) => (
+                      <tr key={movement.id}>
+                        <td>{date(movement.movementDate)}</td>
+                        <td>{movementLabel[movement.type] ?? movement.type}</td>
+                        <td className="muted">{movement.reason ?? movement.sourceType}</td>
+                        <td className={`num ${movement.amountMillimes < 0 ? "amount-out" : "amount-in"}`}>{money(movement.amountMillimes)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <strong style={{ color: movement.amountMillimes < 0 ? "#C2452B" : "#4E8B63" }}>{money(movement.amountMillimes)}</strong>
-            </div>
-          ))}
-        </div>
-      </section>
+            )}
+        </Card>
+
+        {can(actor, "cash.adjust") && (
+          <div className="stack">
+            {!hasOpening && (
+              <Card title="Opening balance">
+                <ActionForm action={setOpeningBalanceAction}>
+                  <Field label="Amount (DNT)" name="amount" inputMode="decimal" placeholder="5000.000" required />
+                  <Field label="Date" name="openingDate" type="date" defaultValue={today} max={today} required />
+                  <SubmitButton>Record opening balance</SubmitButton>
+                </ActionForm>
+              </Card>
+            )}
+            <Card title="Record an adjustment">
+              <ActionForm action={recordAdjustmentAction} resetOnSuccess>
+                <Field label="Amount (DNT)" name="amount" inputMode="decimal" placeholder="-25.500" hint="Negative removes cash, positive adds cash" required />
+                <Field label="Date" name="movementDate" type="date" defaultValue={today} max={today} required />
+                <Field label="Reason" name="reason" placeholder="Bank fee, counting error…" required />
+                <SubmitButton>Record adjustment</SubmitButton>
+              </ActionForm>
+            </Card>
+          </div>
+        )}
+      </div>
     </main>
-    </FadeIn>
   );
 }

@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { signOutAction } from "@/app/signout-action";
+import { switchCompanyAction } from "@/app/onboarding/actions";
 
-type NavItem = { label: string; href: string; icon: React.ReactNode };
+type NavItem = { label: string; href: string; icon: React.ReactNode; permission: string };
+type CompanyOption = { companyId: string; name: string };
 
 const icons = {
   dashboard: (
@@ -75,41 +77,45 @@ const sections: { title: string; items: NavItem[] }[] = [
   {
     title: "Overview",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: icons.dashboard },
-      { label: "Cash", href: "/cash", icon: icons.cash },
-      { label: "Forecast", href: "/forecast", icon: icons.forecast },
+      { label: "Dashboard", href: "/dashboard", icon: icons.dashboard, permission: "dashboard.view" },
+      { label: "Cash", href: "/cash", icon: icons.cash, permission: "cash.view" },
+      { label: "Forecast", href: "/forecast", icon: icons.forecast, permission: "forecast.view" },
     ],
   },
   {
     title: "Sales",
     items: [
-      { label: "Invoices", href: "/invoices", icon: icons.invoices },
-      { label: "Retainers", href: "/retainers", icon: icons.retainers },
+      { label: "Invoices", href: "/invoices", icon: icons.invoices, permission: "invoices.view" },
+      { label: "Retainers", href: "/retainers", icon: icons.retainers, permission: "retainers.manage" },
     ],
   },
   {
     title: "Operations",
     items: [
-      { label: "Expenses", href: "/expenses", icon: icons.expenses },
-      { label: "Parties", href: "/parties", icon: icons.parties },
-      { label: "Simulations", href: "/simulations", icon: icons.simulations },
+      { label: "Expenses", href: "/expenses", icon: icons.expenses, permission: "expenses.submit" },
+      { label: "Parties", href: "/parties", icon: icons.parties, permission: "parties.view" },
+      { label: "Simulations", href: "/simulations", icon: icons.simulations, permission: "simulations.use" },
     ],
   },
   {
     title: "Settings",
     items: [
-      { label: "Company", href: "/settings/company", icon: icons.company },
-      { label: "Members", href: "/settings/members", icon: icons.members },
+      { label: "Company", href: "/settings/company", icon: icons.company, permission: "company.manage" },
+      { label: "Members", href: "/settings/members", icon: icons.members, permission: "expenses.submit" },
     ],
   },
 ];
 
-function NavLinks({ onNavigate, stagger = false }: { onNavigate?: () => void; stagger?: boolean }) {
+/** Links the role cannot use are hidden; the server still checks every action. */
+function NavLinks({ onNavigate, stagger = false, permissions }: { onNavigate?: () => void; stagger?: boolean; permissions: readonly string[] }) {
   const pathname = usePathname();
   let index = 0;
+  const visible = sections
+    .map((section) => ({ ...section, items: section.items.filter((item) => permissions.includes(item.permission)) }))
+    .filter((section) => section.items.length > 0);
   return (
-    <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {sections.map((section) => (
+    <nav aria-label="Main" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {visible.map((section) => (
         <div key={section.title}>
           <p className="nav-section-title">{section.title}</p>
           {section.items.map((item) => {
@@ -150,7 +156,9 @@ function NavLinks({ onNavigate, stagger = false }: { onNavigate?: () => void; st
   );
 }
 
-function SidebarContent({ email, name, onNavigate, stagger, role, companyName }: { email: string | null; name: string | null; onNavigate?: () => void; stagger?: boolean; role: string | null; companyName: string | null }) {
+type SidebarProps = { email: string | null; name: string | null; role: string | null; companyName: string | null; companyId: string; companies: CompanyOption[]; permissions: readonly string[] };
+
+function SidebarContent({ email, name, onNavigate, stagger, role, companyName, companyId, companies, permissions }: SidebarProps & { onNavigate?: () => void; stagger?: boolean }) {
   const initials = (name ?? email ?? "U")
     .split(/\s+/)
     .map((part) => part[0]?.toUpperCase() ?? "")
@@ -160,7 +168,7 @@ function SidebarContent({ email, name, onNavigate, stagger, role, companyName }:
 
   return (
     <>
-      <Link href="/dashboard" onClick={onNavigate} style={{ textDecoration: "none", marginBottom: 18 }}>
+      <Link href="/" onClick={onNavigate} style={{ textDecoration: "none", marginBottom: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div className="nav-avatar" style={{ width: 42, height: 42, borderRadius: 16 }}>
             <span style={{ fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: 15 }}>C</span>
@@ -172,7 +180,18 @@ function SidebarContent({ email, name, onNavigate, stagger, role, companyName }:
         </div>
       </Link>
 
-      <NavLinks onNavigate={onNavigate} stagger={stagger} />
+      {companies.length > 1 && (
+        <form action={switchCompanyAction} style={{ marginBottom: 12 }}>
+          <label className="mono" htmlFor="company-switcher" style={{ display: "block", marginBottom: 6 }}>Company</label>
+          <select id="company-switcher" name="companyId" defaultValue={companyId} onChange={(event) => event.currentTarget.form?.requestSubmit()}
+            style={{ width: "100%", height: 38, borderRadius: 12, border: "1px solid var(--sage-200)", padding: "0 10px", background: "rgba(255,255,255,0.8)" }}>
+            {companies.map((company) => <option key={company.companyId} value={company.companyId}>{company.name}</option>)}
+          </select>
+        </form>
+      )}
+
+      <NavLinks onNavigate={onNavigate} stagger={stagger} permissions={permissions} />
+      <Link href="/onboarding" onClick={onNavigate} className="nav-link" style={{ marginTop: 8, fontSize: 13 }}>+ New company</Link>
 
       <div style={{ marginTop: "auto", paddingTop: 16 }}>
         <div className="glass" style={{ padding: 14, borderRadius: 18, display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
@@ -211,7 +230,7 @@ function SidebarContent({ email, name, onNavigate, stagger, role, companyName }:
   );
 }
 
-export default function NavSidebar({ email, name, role, companyName }: { email: string | null; name: string | null; role: string | null; companyName: string | null }) {
+export default function NavSidebar(props: SidebarProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const close = () => setDrawerOpen(false);
 
@@ -223,7 +242,7 @@ export default function NavSidebar({ email, name, role, companyName }: { email: 
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
-        <SidebarContent email={email} name={name} stagger role={role} companyName={companyName} />
+        <SidebarContent {...props} stagger />
       </motion.aside>
 
       <div className="app-topbar">
@@ -256,7 +275,7 @@ export default function NavSidebar({ email, name, role, companyName }: { email: 
                   {icons.close}
                 </button>
               </div>
-              <SidebarContent email={email} name={name} onNavigate={close} stagger role={role} companyName={companyName} />
+              <SidebarContent {...props} onNavigate={close} stagger />
             </motion.aside>
           </>
         )}

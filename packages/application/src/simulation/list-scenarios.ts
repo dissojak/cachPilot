@@ -1,16 +1,14 @@
-import { CompanyId, UserId } from "@cashpilot/domain";
-import { ScenarioRepository } from "../ports/scenario-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { authorize } from "../access/authorize";
+import { CompanyId } from "@cashpilot/domain";
+import type { ScenarioRepository } from "../ports/scenario-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
 
 export interface ListScenariosInput { userId: string; companyId: string; }
 
 export class ListScenarios {
   constructor(private readonly scenarios: ScenarioRepository, private readonly memberships: MembershipRepository) {}
   async execute(input: ListScenariosInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    await authorize(this.memberships, input, "simulations.use");
     return (await this.scenarios.byCompany(CompanyId.from(input.companyId))).map((scenario) => scenario.snapshot());
   }
 }

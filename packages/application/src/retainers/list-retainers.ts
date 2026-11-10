@@ -1,16 +1,14 @@
-import { CompanyId, UserId } from "@cashpilot/domain";
-import { RetainerRepository } from "../ports/retainer-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { authorize } from "../access/authorize";
+import { CompanyId } from "@cashpilot/domain";
+import type { RetainerRepository } from "../ports/retainer-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
 
 export interface ListRetainersInput { userId: string; companyId: string; }
 
 export class ListRetainers {
   constructor(private readonly retainers: RetainerRepository, private readonly memberships: MembershipRepository) {}
   async execute(input: ListRetainersInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    await authorize(this.memberships, input, "retainers.manage");
     return (await this.retainers.byCompany(CompanyId.from(input.companyId))).map((retainer) => retainer.snapshot());
   }
 }

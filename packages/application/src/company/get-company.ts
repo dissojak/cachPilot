@@ -1,8 +1,7 @@
-import { CompanyId, UserId } from "@cashpilot/domain";
-import { CompanyRepository } from "../ports/company-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { CompanyId, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import type { CompanyRepository } from "../ports/company-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
+import { authorizeMember } from "../access/authorize";
 
 export interface GetCompanyInput {
   userId: string;
@@ -16,19 +15,9 @@ export class GetCompany {
   ) {}
 
   async execute(input: GetCompanyInput) {
-    const membership = await this.memberships.byUserAndCompany(
-      UserId.from(input.userId),
-      CompanyId.from(input.companyId),
-    );
-    if (!membership) {
-      throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
-    }
-
+    await authorizeMember(this.memberships, input);
     const company = await this.companies.byId(CompanyId.from(input.companyId));
-    if (!company) {
-      throw new DomainError(DOMAIN_ERROR_CODES.COMPANY_NOT_FOUND, "Company not found");
-    }
-
+    if (!company) throw new DomainError(DOMAIN_ERROR_CODES.COMPANY_NOT_FOUND, "Company not found");
     return company.snapshot();
   }
 }

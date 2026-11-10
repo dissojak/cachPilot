@@ -1,31 +1,26 @@
 import { NextResponse } from "next/server";
+import { DomainError } from "@cashpilot/application";
 import { useCases } from "@/container";
-import { requireActor } from "@/lib/auth-actor";
-import { DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { getActor } from "@/lib/session";
 
+/** Transport only (course s.15): session → use case → PDF bytes. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const actor = await requireActor();
+  const actor = await getActor();
+  if (!actor?.companyId) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  const { id } = await params;
   try {
-    const { id } = await params;
-    const result = await useCases.exportInvoicePdf.execute({
-      userId: actor.userId,
-      companyId: actor.companyId,
-      invoiceId: id,
-    });
-
-    return new NextResponse(result.pdf as BodyInit, {
+    const result = await useCases.exportInvoicePdf.execute({ userId: actor.userId, companyId: actor.companyId, invoiceId: id });
+    return new NextResponse(Buffer.from(result.pdf), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="invoice-${id}.pdf"`,
+        "Content-Disposition": `attachment; filename="${result.fileName}"`,
+        "Cache-Control": "private, no-store",
       },
     });
   } catch (error) {
-    if (error instanceof DomainError && error.code === DOMAIN_ERROR_CODES.ACCESS_DENIED) {
-      return NextResponse.json({ error: error.code }, { status: 403 });
-    }
     if (error instanceof DomainError) {
-      return NextResponse.json({ error: error.code }, { status: 404 });
+      return NextResponse.json({ error: error.code }, { status: error.code === "ACCESS_DENIED" ? 403 : 404 });
     }
-    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
+    throw error;
   }
 }

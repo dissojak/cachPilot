@@ -1,8 +1,9 @@
-import { CompanyId, UserId, PartyId } from "@cashpilot/domain";
-import { PartyRepository } from "../ports/party-repository";
-import { InvoiceRepository } from "../ports/invoice-repository";
-import { PaymentRepository } from "../ports/payment-repository";
-import { MembershipRepository } from "../ports/membership-repository";
+import { authorize } from "../access/authorize";
+import { CompanyId, PartyId } from "@cashpilot/domain";
+import type { PartyRepository } from "../ports/party-repository";
+import type { InvoiceRepository } from "../ports/invoice-repository";
+import type { PaymentRepository } from "../ports/payment-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
 import { DomainError } from "@cashpilot/domain";
 import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
 
@@ -21,12 +22,11 @@ export class GetPartyHistory {
   ) {}
 
   async execute(input: GetPartyHistoryInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    await authorize(this.memberships, input, "parties.view");
 
     const party = await this.parties.byId(PartyId.from(input.partyId));
     if (!party || !party.companyId.equals(CompanyId.from(input.companyId))) {
-      throw new DomainError(DOMAIN_ERROR_CODES.COMPANY_NOT_FOUND, "Party not found");
+      throw new DomainError(DOMAIN_ERROR_CODES.PARTY_NOT_FOUND, "Party not found");
     }
 
     const invoices = await this.invoices.byCompany(CompanyId.from(input.companyId));

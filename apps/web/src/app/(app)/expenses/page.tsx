@@ -1,39 +1,46 @@
-import { useCases } from "@/container";
-import { requireActor } from "@/lib/auth-actor";
-import { money, date } from "@/lib/format";
 import Link from "next/link";
-import FadeIn from "@/components/fade-in";
+import { PageHeader, StatusChip, EmptyState } from "@cashpilot/ui";
+import type { ExpenseStatus } from "@cashpilot/application";
+import { useCases } from "@/container";
+import { requirePermission, can } from "@/lib/session";
+import { money, date, statusLabel } from "@/lib/format";
 
-export default async function ExpensesPage() {
-  const actor = await requireActor();
-  const expenses = await useCases.listExpenses.execute({ userId: actor.userId, companyId: actor.companyId });
+const filters: { label: string; value?: ExpenseStatus }[] = [
+  { label: "All" }, { label: "To approve", value: "submitted" }, { label: "Approved", value: "approved" },
+  { label: "Paid", value: "paid" }, { label: "Refused", value: "refused" },
+];
+
+export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+  const actor = await requirePermission("expenses.submit");
+  const { status } = await searchParams;
+  const active = filters.find((item) => item.value === status)?.value;
+  const expenses = await useCases.listExpenses.execute({ ...actor, status: active });
+  const all = can(actor, "expenses.viewAll");
 
   return (
-    <FadeIn>
-      <main className="shell motion-fade">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 24, marginBottom: 24 }}>
-        <div>
-          <p className="mono">Expenses</p>
-          <h1 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 40, lineHeight: "44px", margin: "8px 0 0" }}>Spending control</h1>
-        </div>
-        <Link href="/expenses/new" style={{ height: 44, padding: "0 20px", borderRadius: 999, background: "#1F6B4E", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", fontWeight: 600 }}>+ Submit expense</Link>
-      </header>
-
-      <section style={{ display: "grid", gap: 12 }}>
-        {expenses.map((expense) => (
-          <article key={expense.id} className="glass lift motion-pop" style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-            <div>
-              <strong style={{ display: "block", marginBottom: 4 }}>{expense.description}</strong>
-              <span style={{ color: "#4A6256", fontSize: 13 }}>{expense.category} · {date(expense.expenseDate)} · {expense.status}</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <strong>{money(expense.amountMillimes)}</strong>
-              <Link href={`/expenses/${expense.id}`} style={{ color: "#1F6B4E", textDecoration: "underline", fontWeight: 600 }}>View</Link>
-            </div>
-          </article>
+    <main className="shell">
+      <PageHeader eyebrow="Expenses" title={all ? "Company expenses" : "My expense requests"}
+        description="Submitted → approved or refused by the owner → paid by the finance manager."
+        actions={<Link href="/expenses/new" className="btn">+ Submit expense</Link>} />
+      <nav className="filters" aria-label="Filter expenses">
+        {filters.map((item) => (
+          <Link key={item.label} href={item.value ? `/expenses?status=${item.value}` : "/expenses"} className={`filter ${item.value === active ? "active" : ""}`}>{item.label}</Link>
         ))}
-      </section>
+      </nav>
+      {expenses.length === 0 ? (
+        <section className="glass"><EmptyState title="No expense here" text="Submitted expenses and their decisions appear in this list." action={<Link href="/expenses/new" className="btn">Submit an expense</Link>} /></section>
+      ) : (
+        <div className="list">
+          {expenses.map((expense) => (
+            <Link key={expense.id} href={`/expenses/${expense.id}`} className="glass lift row">
+              <div><strong>{expense.description}</strong><small>{expense.category}</small></div>
+              <div><small>Amount</small><strong>{money(expense.amountMillimes)}</strong></div>
+              <div><small>Date</small><strong>{date(expense.expenseDate)}</strong></div>
+              <StatusChip status={expense.status} label={statusLabel[expense.status] ?? expense.status} />
+            </Link>
+          ))}
+        </div>
+      )}
     </main>
-    </FadeIn>
   );
 }

@@ -1,113 +1,107 @@
 import { describe, it, expect } from "vitest";
-import { Company, User, Membership, Party, InvoiceNumber, DateOnly, Money } from "@cashpilot/domain";
-import { RecordPayment, CancelInvoice, ValidateInvoice } from "./index";
-import {
-  InMemoryCompanyRepository,
-  InMemoryUserRepository,
-  InMemoryMembershipRepository,
-  InMemoryPartyRepository,
-  InMemoryInvoiceRepository,
-  InMemoryPaymentRepository,
-  InMemoryExpenseRepository,
-  InMemoryCashMovementRepository,
-} from "../test/fakes";
+import { createWorld, createCompany, validatedInvoice } from "../test/world";
 
-class NoopTransactions {
-  async run<T>(work: () => Promise<T>) { return work(); }
+async function setup() {
+  const world = createWorld("2026-11-05");
+  const company = await createCompany(world);
+  const invoiceId = await validatedInvoice(world, company, 3_000_000, "2026-11-10");
+  const pay = (amountMillimes: number, operationId: string, actor = company.finance) =>
+    world.useCases.recordPayment.execute({ ...actor, invoiceId, operationId, amountMillimes, paymentDate: "2026-11-05", method: "bank_transfer" });
+  return { world, company, invoiceId, pay };
 }
 
-describe("invoice payments", () => {
-  async function setup() {
-    const companies = new InMemoryCompanyRepository();
-    const users = new InMemoryUserRepository();
-    const memberships = new InMemoryMembershipRepository();
-    const parties = new InMemoryPartyRepository();
-    const invoices = new InMemoryInvoiceRepository();
-    const payments = new InMemoryPaymentRepository();
-    const expenses = new InMemoryExpenseRepository();
-    const movements = new InMemoryCashMovementRepository();
-
-    const company = Company.create({ name: "Atlas", sector: "agency", openingBalance: Money.of(5000000) });
-    await companies.save(company);
-    const user = User.fromOAuth({ email: "owner@demo.test", name: "Owner", provider: "demo", subject: "owner" });
-    await users.save(user);
-    await memberships.save(Membership.create(user.id, company.id, "owner"));
-    const party = Party.create({ companyId: company.id, type: "customer", name: "Acme" });
-    await parties.save(party);
-
-    const invoice = (await import("@cashpilot/domain")).Invoice.create({
-      companyId: company.id,
-      customerId: party.id,
-      number: InvoiceNumber.from("INV-001"),
-      issueDate: DateOnly.from("2026-11-01"),
-      dueDate: DateOnly.from("2026-11-10"),
-      lines: [{ description: "Work", quantity: 1, unitPrice: Money.of(3000000), lineTotal: Money.of(3000000) }],
-    });
-    invoice.validate();
-    await invoices.save(invoice);
-
-    return { company, user, party, invoice, companies, users, memberships, parties, invoices, payments, expenses, movements };
-  }
-
-  it("reduces remaining amount on partial payment", async () => {
-    const ctx = await setup();
-    await new RecordPayment(ctx.invoices, ctx.payments, ctx.movements, ctx.memberships, new NoopTransactions() as any).execute({
-      userId: ctx.user.id.value,
-      companyId: ctx.company.id.value,
-      invoiceId: ctx.invoice.id.value,
-      amountMillimes: 1000000,
-      paymentDate: "2026-11-05",
-      method: "bank",
-    });
-
-    const updated = await ctx.invoices.byId(ctx.invoice.id);
-    expect(updated?.remaining.amount).toBe(2000000);
-    expect(updated?.status).toBe("partially_paid");
+describe("invoices and payments", () => {
+  it("numbers invoices per company without gaps (D6)", async () => {
+    const { world, company } = await setup();
+    const second = await validatedInvoice(world, company, 1_000, "2026-11-20");
+    expect((await world.useCases.getInvoice.execute({ ...company.finance, invoiceId: second })).number).toBe("INV-0002");
   });
 
-  it("rejects payment above remaining amount", async () => {
-    const ctx = await setup();
-    await expect(new RecordPayment(ctx.invoices, ctx.payments, ctx.movements, ctx.memberships, new NoopTransactions() as any).execute({
-      userId: ctx.user.id.value,
-      companyId: ctx.company.id.value,
-      invoiceId: ctx.invoice.id.value,
-      amountMillimes: 4000000,
-      paymentDate: "2026-11-05",
-      method: "bank",
-    })).rejects.toThrow();
+  it("criterion 1: a partial payment reduces the remaining amount", async () => {
+    const { pay } = await setup();
+    const result = await pay(1_000_000, "op-1");
+    expect(result.invoice.remainingMillimes).toBe(2_000_000);
+    expect(result.invoice.status).toBe("partially_paid");
   });
 
-  it("blocks cancellation after payment", async () => {
-    const ctx = await setup();
-    await new RecordPayment(ctx.invoices, ctx.payments, ctx.movements, ctx.memberships, new NoopTransactions() as any).execute({
-      userId: ctx.user.id.value,
-      companyId: ctx.company.id.value,
-      invoiceId: ctx.invoice.id.value,
-      amountMillimes: 1000000,
-      paymentDate: "2026-11-05",
-      method: "bank",
-    });
-
-    await expect(new CancelInvoice(ctx.invoices, ctx.payments, ctx.memberships).execute({
-      userId: ctx.user.id.value,
-      companyId: ctx.company.id.value,
-      invoiceId: ctx.invoice.id.value,
-    })).rejects.toThrow();
+  it("criterion 2: a payment above the remaining amount is rejected and nothing is stored", async () => {
+    const { world, pay } = await setup();
+    await expect(pay(3_000_001, "op-1")).rejects.toMatchObject({ code: "PAYMENT_EXCEEDS_REMAINING" });
+    expect(world.repos.payments.items.size).toBe(0);
+    expect(world.repos.movements.items).toHaveLength(1); // only the opening balance
   });
 
-  it("creates one cash movement for the payment", async () => {
-    const ctx = await setup();
-    await new RecordPayment(ctx.invoices, ctx.payments, ctx.movements, ctx.memberships, new NoopTransactions() as any).execute({
-      userId: ctx.user.id.value,
-      companyId: ctx.company.id.value,
-      invoiceId: ctx.invoice.id.value,
-      amountMillimes: 1000000,
-      paymentDate: "2026-11-05",
-      method: "bank",
-    });
+  it("criterion 4 / BR-10: one payment creates exactly one cash movement", async () => {
+    const { world, company, pay } = await setup();
+    await pay(1_000_000, "op-1");
+    const balance = await world.useCases.getRealBalance.execute(company.finance);
+    expect(balance.balanceMillimes).toBe(6_000_000);
+  });
 
-    const movements = await ctx.movements.byCompany(ctx.company.id);
-    expect(movements).toHaveLength(1);
-    expect(movements[0]!.amountMillimes).toBe(1000000);
+  it("D5: submitting the same payment twice is rejected", async () => {
+    const { world, company, pay } = await setup();
+    await pay(1_000_000, "op-1");
+    await expect(pay(1_000_000, "op-1")).rejects.toMatchObject({ code: "DUPLICATE_OPERATION" });
+    expect((await world.useCases.getRealBalance.execute(company.finance)).balanceMillimes).toBe(6_000_000);
+  });
+
+  it("criterion 9: two payments of 1 000.333 DT on 3 000 DT leave exactly 999.334 DT, no rounding", async () => {
+    const { pay } = await setup();
+    await pay(1_000_333, "op-1");
+    const last = await pay(1_000_333, "op-2");
+    expect(last.invoice.remainingMillimes).toBe(999_334);
+  });
+
+  it("refuses a payment dated in the future", async () => {
+    const { world, company, invoiceId } = await setup();
+    await expect(world.useCases.recordPayment.execute({
+      ...company.finance, invoiceId, operationId: "op-1", amountMillimes: 1_000, paymentDate: "2026-12-01", method: "cash",
+    })).rejects.toMatchObject({ code: "INVALID_DATE" });
+  });
+
+  it("BR-06: an invoice with payments cannot be cancelled", async () => {
+    const { world, company, invoiceId, pay } = await setup();
+    await pay(1_000_000, "op-1");
+    await expect(world.useCases.cancelInvoice.execute({ ...company.finance, invoiceId, reason: "error" }))
+      .rejects.toMatchObject({ code: "INVOICE_HAS_PAYMENTS" });
+  });
+
+  it("refuses a customer that belongs to another company (BR-01)", async () => {
+    const { world, company } = await setup();
+    const other = await createCompany(world);
+    await expect(world.useCases.createInvoiceDraft.execute({
+      ...company.finance, customerId: other.customerId, issueDate: "2026-11-05", dueDate: "2026-11-10",
+      lines: [{ description: "x", quantity: 1, unitPriceMillimes: 1_000 }],
+    })).rejects.toMatchObject({ code: "PARTY_NOT_FOUND" });
+  });
+
+  it("BR-02: a collaborator cannot record payments or create invoices", async () => {
+    const { world, company, pay } = await setup();
+    await expect(pay(1_000, "op-1", company.collaborator)).rejects.toMatchObject({ code: "ACCESS_DENIED" });
+    await expect(world.useCases.createInvoiceDraft.execute({
+      ...company.collaborator, customerId: company.customerId, issueDate: "2026-11-05", dueDate: "2026-11-10",
+      lines: [{ description: "x", quantity: 1, unitPriceMillimes: 1_000 }],
+    })).rejects.toMatchObject({ code: "ACCESS_DENIED" });
+    expect(world.repos.payments.items.size).toBe(0);
+  });
+
+  it("criterion 7: a member of another company cannot read this invoice", async () => {
+    const { world, company, invoiceId } = await setup();
+    const other = await createCompany(world);
+    await expect(world.useCases.getInvoice.execute({ userId: other.owner.userId, companyId: company.companyId, invoiceId }))
+      .rejects.toMatchObject({ code: "ACCESS_DENIED" });
+  });
+
+  it("validating and paying leave an audit trail", async () => {
+    const { world, pay } = await setup();
+    await pay(1_000, "op-1");
+    expect(world.repos.audit.items.map((entry) => entry.action)).toEqual(["company.registered", "invoice.validated", "payment.recorded"]);
+  });
+
+  it("exports a PDF from the invoice data", async () => {
+    const { world, company, invoiceId } = await setup();
+    const result = await world.useCases.exportInvoicePdf.execute({ ...company.owner, invoiceId });
+    expect(result.fileName).toBe("INV-0001.pdf");
+    expect(world.pdf.calls[0]?.customer.name).toBe("Acme");
   });
 });

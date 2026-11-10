@@ -1,8 +1,17 @@
 import { Schema, model, models } from "mongoose";
 import type { Model } from "mongoose";
+import type {
+  CompanyDoc, UserDoc, MembershipDoc, PartyDoc, InvoiceDoc, PaymentDoc, ExpenseDoc,
+  CashMovementDoc, ScenarioDoc, RetainerDoc, AuditLogDoc, CounterDoc,
+} from "./documents";
 
-function define(name: string, schema: Schema): Model<any> {
-  return (models[name] as Model<any>) || model(name, schema);
+/**
+ * The document type is declared (documents.ts), not inferred from the schema:
+ * Mongoose's schema inference makes TypeScript run out of memory.
+ */
+function define<T>(name: string, schema: Schema): Model<T> {
+  const existing: unknown = models[name] ?? model(name, schema);
+  return existing as Model<T>;
 }
 
 const moneyField = { type: Number, required: true };
@@ -12,7 +21,6 @@ const companySchema = new Schema(
     _id: { type: String, required: true },
     name: { type: String, required: true, trim: true },
     sector: { type: String, required: true, trim: true },
-    openingBalanceMillimes: { ...moneyField },
     currency: { type: String, required: true, default: "DNT" },
     forecastThresholdMillimes: { type: Number, required: true, default: 0 },
   },
@@ -86,6 +94,7 @@ const invoiceSchema = new Schema(
     remainingMillimes: { type: Number, required: true, min: 0 },
     cancelledReason: { type: String, trim: true },
     cancelledBy: { type: String, trim: true },
+    cancelledAt: { type: String },
   },
   { timestamps: true },
 );
@@ -128,7 +137,6 @@ const expenseSchema = new Schema(
     payment: {
       paidBy: { type: String },
       paidDate: { type: String },
-      amountMillimes: { type: Number, min: 1 },
     },
   },
   { timestamps: true },
@@ -137,6 +145,8 @@ const expenseSchema = new Schema(
 const cashMovementSchema = new Schema(
   {
     _id: { type: String, required: true },
+    // was missing: Mongoose silently dropped it, so balances could not be read per company
+    companyId: { type: String, required: true },
     type: {
       type: String,
       required: true,
@@ -148,6 +158,7 @@ const cashMovementSchema = new Schema(
     sourceId: { type: String, required: true },
     actorId: { type: String, required: true },
     reason: { type: String, trim: true },
+    reversesId: { type: String },
   },
   { timestamps: true },
 );
@@ -162,10 +173,8 @@ const hypothesisSchema = new Schema(
     invoiceId: { type: String },
     delayDays: { type: Number, min: 1 },
     amountMillimes: { type: Number, min: 1 },
-    plannedDate: { type: String },
-    category: { type: String, trim: true },
-    description: { type: String, trim: true },
-    expectedDate: { type: String },
+    date: { type: String },
+    label: { type: String, trim: true },
   },
   { _id: false },
 );
@@ -206,21 +215,16 @@ const auditLogSchema = new Schema(
     before: { type: Schema.Types.Mixed },
     after: { type: Schema.Types.Mixed },
     reason: { type: String, trim: true },
+    at: { type: String, required: true },
   },
   { timestamps: true },
 );
 
-export const CompanyModel = define("Company", companySchema);
-export const UserModel = define("User", userSchema);
-export const MembershipModel = define("Membership", membershipSchema);
-export const PartyModel = define("Party", partySchema);
-export const InvoiceModel = define("Invoice", invoiceSchema);
-export const PaymentModel = define("Payment", paymentSchema);
-export const ExpenseModel = define("Expense", expenseSchema);
-export const CashMovementModel = define("CashMovement", cashMovementSchema);
-export const ScenarioModel = define("Scenario", scenarioSchema);
-export const RetainerModel = define("Retainer", retainerSchema);
-export const AuditLogModel = define("AuditLog", auditLogSchema);
+/** Per-company invoice number sequence, incremented atomically ($inc). */
+const counterSchema = new Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, required: true, default: 0 },
+});
 
 companySchema.index({ name: 1 });
 userSchema.index({ email: 1 }, { unique: true });
@@ -231,6 +235,20 @@ invoiceSchema.index({ companyId: 1, status: 1, dueDate: 1 });
 paymentSchema.index({ companyId: 1, invoiceId: 1 });
 expenseSchema.index({ companyId: 1, status: 1, expenseDate: 1 });
 cashMovementSchema.index({ companyId: 1, movementDate: 1 });
+cashMovementSchema.index({ companyId: 1, type: 1 });
 scenarioSchema.index({ companyId: 1, createdAt: -1 });
 retainerSchema.index({ companyId: 1, status: 1 });
 auditLogSchema.index({ companyId: 1, createdAt: -1 });
+
+export const CompanyModel = define<CompanyDoc>("Company", companySchema);
+export const UserModel = define<UserDoc>("User", userSchema);
+export const MembershipModel = define<MembershipDoc>("Membership", membershipSchema);
+export const PartyModel = define<PartyDoc>("Party", partySchema);
+export const InvoiceModel = define<InvoiceDoc>("Invoice", invoiceSchema);
+export const PaymentModel = define<PaymentDoc>("Payment", paymentSchema);
+export const ExpenseModel = define<ExpenseDoc>("Expense", expenseSchema);
+export const CashMovementModel = define<CashMovementDoc>("CashMovement", cashMovementSchema);
+export const ScenarioModel = define<ScenarioDoc>("Scenario", scenarioSchema);
+export const RetainerModel = define<RetainerDoc>("Retainer", retainerSchema);
+export const AuditLogModel = define<AuditLogDoc>("AuditLog", auditLogSchema);
+export const CounterModel = define<CounterDoc>("Counter", counterSchema);

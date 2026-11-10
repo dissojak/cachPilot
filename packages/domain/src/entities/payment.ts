@@ -1,9 +1,9 @@
 import { PaymentId } from "../value-objects/ids";
-import { CompanyId } from "../value-objects/ids";
-import { InvoiceId } from "../value-objects/ids";
-import { UserId } from "../value-objects/ids";
-import { DateOnly } from "../value-objects/date-only";
-import { Money } from "../value-objects/money";
+import type { CompanyId } from "../value-objects/ids";
+import type { InvoiceId } from "../value-objects/ids";
+import type { UserId } from "../value-objects/ids";
+import type { DateOnly } from "../value-objects/date-only";
+import type { Money } from "../value-objects/money";
 
 export class Payment {
   private constructor(
@@ -49,6 +49,7 @@ export class Payment {
   get invoiceId() { return this.props.invoiceId; }
   get amount() { return this.props.amount; }
   get paymentDate() { return this.props.paymentDate; }
+  get recordedBy() { return this.props.recordedBy; }
 
   snapshot() {
     return {

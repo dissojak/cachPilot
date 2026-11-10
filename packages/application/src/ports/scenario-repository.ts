@@ -1,6 +1,6 @@
-import { Scenario } from "@cashpilot/domain";
-import { ScenarioId } from "@cashpilot/domain";
-import { CompanyId } from "@cashpilot/domain";
+import type { Scenario } from "@cashpilot/domain";
+import type { ScenarioId } from "@cashpilot/domain";
+import type { CompanyId } from "@cashpilot/domain";
 
 export interface ScenarioRepository {
   byId(id: ScenarioId): Promise<Scenario | null>;

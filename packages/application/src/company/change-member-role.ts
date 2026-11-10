@@ -1,43 +1,41 @@
-import { CompanyId, UserId } from "@cashpilot/domain";
-import { Membership } from "@cashpilot/domain";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { CompanyId, UserId, Membership, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import type { MembershipRole } from "@cashpilot/domain";
+import type { MembershipRepository } from "../ports/membership-repository";
+import type { AuditLogRepository } from "../ports/audit-log-repository";
+import type { Clock } from "../ports/clock";
+import { authorize } from "../access/authorize";
 
 export interface ChangeMemberRoleInput {
-  actorUserId: string;
-  companyId: string;
   userId: string;
-  role: "owner" | "finance_manager" | "collaborator";
+  companyId: string;
+  memberUserId: string;
+  role: MembershipRole;
 }
 
 export class ChangeMemberRole {
-  constructor(private readonly memberships: MembershipRepository) {}
+  constructor(
+    private readonly memberships: MembershipRepository,
+    private readonly audit: AuditLogRepository,
+    private readonly clock: Clock,
+  ) {}
 
   async execute(input: ChangeMemberRoleInput) {
-    const actor = await this.memberships.byUserAndCompany(
-      UserId.from(input.actorUserId),
-      CompanyId.from(input.companyId),
-    );
-    if (!actor || actor.role !== "owner") {
-      throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Only the owner can change roles");
+    await authorize(this.memberships, input, "members.manage");
+    const companyId = CompanyId.from(input.companyId);
+    const memberId = UserId.from(input.memberUserId);
+    const membership = await this.memberships.byUserAndCompany(memberId, companyId);
+    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.MEMBERSHIP_NOT_FOUND, "This person is not a member");
+
+    const before = membership.role;
+    if (input.role !== "owner") {
+      Membership.assertNotLastOwner(await this.memberships.listByCompany(companyId), memberId);
     }
-
-    const membership = await this.memberships.byUserAndCompany(
-      UserId.from(input.userId),
-      CompanyId.from(input.companyId),
-    );
-    if (!membership) {
-      throw new DomainError(DOMAIN_ERROR_CODES.USER_NOT_FOUND, "Membership not found");
-    }
-
-    const updated = Membership.create(
-      UserId.from(input.userId),
-      CompanyId.from(input.companyId),
-      input.role,
-    );
-    await this.memberships.save(updated);
-
-    return { userId: input.userId, companyId: input.companyId, role: input.role };
+    membership.changeRole(input.role);
+    await this.memberships.save(membership);
+    await this.audit.append({
+      companyId: input.companyId, actorId: input.userId, entityType: "membership", entityId: input.memberUserId,
+      action: "member.role_changed", before, after: input.role, at: this.clock.now().toISOString(),
+    });
+    return { userId: input.memberUserId, companyId: input.companyId, role: input.role };
   }
 }

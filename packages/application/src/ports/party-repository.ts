@@ -1,6 +1,6 @@
-import { Party } from "@cashpilot/domain";
-import { PartyId } from "@cashpilot/domain";
-import { CompanyId } from "@cashpilot/domain";
+import type { Party } from "@cashpilot/domain";
+import type { PartyId } from "@cashpilot/domain";
+import type { CompanyId } from "@cashpilot/domain";
 
 export interface PartyRepository {
   byId(id: PartyId): Promise<Party | null>;

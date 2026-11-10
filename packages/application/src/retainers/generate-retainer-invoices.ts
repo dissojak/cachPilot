@@ -1,51 +1,48 @@
-import { CompanyId, UserId, RetainerId, Invoice, InvoiceNumber, DateOnly, Money } from "@cashpilot/domain";
-import { RetainerRepository } from "../ports/retainer-repository";
-import { InvoiceRepository } from "../ports/invoice-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { CompanyId, Invoice, InvoiceNumber, DateOnly } from "@cashpilot/domain";
+import type { RetainerRepository } from "../ports/retainer-repository";
+import type { InvoiceRepository } from "../ports/invoice-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
+import type { Clock } from "../ports/clock";
+import { authorize } from "../access/authorize";
 
-export interface GenerateRetainerInvoicesInput { userId: string; companyId: string; asOfDate: string; }
+export interface GenerateRetainerInvoicesInput { userId: string; companyId: string; asOfDate?: string; }
 
+/**
+ * Original feature: each due period of an active retainer becomes one
+ * validated invoice (an expected receipt in the forecast). The retainer then
+ * advances, so running this twice never creates duplicates.
+ */
 export class GenerateRetainerInvoices {
   constructor(
     private readonly retainers: RetainerRepository,
     private readonly invoices: InvoiceRepository,
     private readonly memberships: MembershipRepository,
+    private readonly clock: Clock,
   ) {}
 
   async execute(input: GenerateRetainerInvoicesInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
-    const asOf = DateOnly.from(input.asOfDate);
-    const retainers = await this.retainers.byCompany(CompanyId.from(input.companyId));
+    await authorize(this.memberships, input, "retainers.manage");
+    const companyId = CompanyId.from(input.companyId);
+    const asOf = input.asOfDate ? DateOnly.from(input.asOfDate) : this.clock.today();
     const generated: string[] = [];
 
-    for (const retainer of retainers) {
-      if (retainer.status !== "active") continue;
-      while (!retainer.nextGenerationDate.isAfter(asOf)) {
-        const number = await this.invoices.nextNumber(CompanyId.from(input.companyId));
+    for (const retainer of await this.retainers.byCompany(companyId)) {
+      for (const periodStart of retainer.dueDates(asOf)) {
         const invoice = Invoice.create({
-          companyId: CompanyId.from(input.companyId),
+          companyId,
           customerId: retainer.customerId,
-          number: InvoiceNumber.from(number),
-          issueDate: retainer.nextGenerationDate,
-          dueDate: retainer.nextGenerationDate,
-          lines: [{
-            description: retainer.name,
-            quantity: 1,
-            unitPrice: retainer.amount,
-            lineTotal: retainer.amount,
-          }],
+          number: InvoiceNumber.from(await this.invoices.nextNumber(companyId)),
+          issueDate: periodStart,
+          dueDate: periodStart,
+          lines: [{ description: retainer.name, quantity: 1, unitPrice: retainer.amount }],
         });
         invoice.validate();
         await this.invoices.save(invoice);
-        generated.push(invoice.id.value);
         retainer.advance();
         await this.retainers.save(retainer);
+        generated.push(invoice.id.value);
       }
     }
-
     return { generatedInvoiceIds: generated };
   }
 }

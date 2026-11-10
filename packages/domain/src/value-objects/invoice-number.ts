@@ -1,8 +1,14 @@
+import { DomainError } from "../errors/domain-error";
+import { DOMAIN_ERROR_CODES } from "../errors/codes";
+
 export class InvoiceNumber {
   private constructor(readonly value: string) {}
 
   static from(value: string) {
-    if (value.trim().length === 0) throw new Error("Invalid invoice number");
-    return new InvoiceNumber(value.trim());
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      throw new DomainError(DOMAIN_ERROR_CODES.INVALID_INPUT, "Invoice number is required");
+    }
+    return new InvoiceNumber(trimmed);
   }
 }

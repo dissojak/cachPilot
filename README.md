@@ -1,84 +1,65 @@
 # CashPilot
 
-CashPilot helps a small business track real cash, forecast cash at 30/60/90 days, simulate decisions, and control expenses.
+Cash-flow tracking and forecasting for a small business (sector: **digital agency**). CashPilot follows the real balance, forecasts cash at 30/60/90 days from unpaid invoices and approved expenses, simulates decisions ("what if a client pays 20 days late?") without touching real data, and controls spending (submit → approve/refuse → pay).
+
+Architecture and design choices: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Functional spec: [`docs/PROJECT.md`](docs/PROJECT.md).
 
 ## Stack
 
-- Next.js App Router
-- React
-- TypeScript
-- pnpm + Turborepo
-- MongoDB Atlas
-- Mongoose
-- Auth.js (OAuth)
-- Vitest
-- Playwright
+Next.js 15 (App Router) · React 19 · TypeScript (strict) · pnpm + Turborepo · MongoDB Atlas + Mongoose · Auth.js (Google OAuth) · Zod · pdf-lib · Vitest · dependency-cruiser · GitHub Actions · Vercel.
 
 ## Setup
 
-1. Install dependencies:
-
 ```bash
 pnpm install
+cp .env.example .env   # then fill it
+pnpm dev               # http://localhost:3000
 ```
 
-2. Create environment file:
+| Variable | Required | Purpose |
+|---|---|---|
+| `DATABASE_URL` | yes | MongoDB Atlas connection string (`mongodb+srv://…`). Atlas is a replica set, which the payment transactions need. |
+| `AUTH_SECRET` | yes | Long random string (`npx auth secret`). |
+| `AUTH_URL` | yes | App URL, e.g. `http://localhost:3000`. |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | yes | Google OAuth client. Redirect URI: `<AUTH_URL>/api/auth/callback/google`. |
+| `CLOUDINARY_URL` | no | `cloudinary://key:secret@cloud` to store expense receipts; without it receipts are kept in memory only. |
+
+## Using the app
+
+There is **no demo data**: everything you see comes from the database.
+
+1. Sign in with Google. The first time, you land on **Create your company** (name, sector, cash in the bank today). You become its **owner**.
+2. Ask teammates to sign in once, then add them by e-mail in **Settings → Members** as *finance manager* or *collaborator*.
+3. Roles (checked on the server for every action):
+   - **Owner** — dashboard, cash, forecast, simulations, approves/refuses expenses, manages company and members.
+   - **Finance manager** — customers, invoices, payments, pays approved expenses, cash adjustments, forecast, simulations, retainers.
+   - **Collaborator** — submits expenses and sees only their own.
+
+Defense scenario: create the company with an opening balance → add a customer → create and validate an invoice → record a partial payment → a collaborator submits an expense, the owner approves it → open **Forecast** → **Simulations**: create a scenario, add "client pays late" on the invoice → compare base and simulated lines and the shortage window.
+
+## Checks and tests
 
 ```bash
-cp .env.example .env
-```
-
-3. Fill `.env`:
-
-- `DATABASE_URL`: MongoDB Atlas connection string
-- `AUTH_SECRET`: long random secret
-- `AUTH_URL`: app URL, e.g. `http://localhost:3000`
-- `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`: Google OAuth credentials
-- Optional: Cloudinary, Resend, Axiom
-
-4. Run the app:
-
-```bash
-pnpm dev
-```
-
-Open `http://localhost:3000`.
-
-### Google OAuth redirect URIs
-
-Add these "Authorized redirect URIs" to the Google OAuth client (Google Cloud Console → Credentials):
-
-- Dev: `http://localhost:3000/api/auth/callback/google`
-- Production: `https://<your-domain>/api/auth/callback/google`
-
-## Demo accounts
-
-OAuth sign-in creates the user on first login. The seeded demo company is `Atlas Studio`.
-
-## Checks
-
-```bash
-pnpm turbo run lint typecheck test build
-```
-
-## Tests
-
-```bash
-pnpm turbo run test
+pnpm turbo run lint typecheck test build   # everything (the infra tests download a MongoDB binary the first time)
+pnpm depcruise                             # architecture rules (layers)
+pnpm --filter @cashpilot/web test:e2e      # Playwright smoke test of the login page
 ```
 
 ## Deployment
 
-Deploy `apps/web` to Vercel with root directory `apps/web`. Configure production environment variables and MongoDB Atlas access.
+Vercel, root directory `apps/web` (see `vercel.json`). Set the variables above in the Vercel project and allow Vercel's IPs in Atlas → Network Access. Update the Google OAuth redirect URI to the production URL.
 
-## External resources
+## Known limitations
 
-- Auth.js
-- MongoDB Atlas
-- Cloudinary
-- Resend
-- Axiom
-- shadcn/ui
-- Tailwind CSS
+- One line per invoice in the form (the domain supports several).
+- Members must sign in once before they can be added (no invitation e-mails).
+- No bank integration: operations are recorded manually, as the spec allows.
+- The end-to-end tests only cover the login page, because signing in requires a real Google account.
 
-AI tools and external resources are declared here as required by the course.
+## AI tools and external resources (declared as required by the course)
+
+- **AI assistants**: OpenCode with GLM and Claude (Claude Code) were used for planning, code generation, refactoring and review. Every change was reviewed and is explained in the commits.
+- **Design**: Google Stitch for the first mockups (`docs/DESIGN.md`, `prompts/`).
+- **Libraries**: Next.js, Auth.js, Mongoose, Zod, pdf-lib, Motion, Vitest, mongodb-memory-server, dependency-cruiser.
+- **Services**: MongoDB Atlas, Google OAuth, Cloudinary, Vercel.
+- **Fonts**: Inter, Outfit, JetBrains Mono.

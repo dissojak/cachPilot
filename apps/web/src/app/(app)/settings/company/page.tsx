@@ -1,21 +1,25 @@
-import { requireActor } from "@/lib/auth-actor";
-import FadeIn from "@/components/fade-in";
+import { PageHeader, Card } from "@cashpilot/ui";
+import { useCases } from "@/container";
+import { requirePermission } from "@/lib/session";
+import { moneyInput } from "@/lib/format";
+import { ActionForm, Field, SubmitButton } from "@/components/form";
+import { updateCompanyAction } from "../actions";
+
 export default async function CompanySettingsPage() {
-  await requireActor();
+  const actor = await requirePermission("company.manage");
+  const company = await useCases.getCompany.execute(actor);
   return (
-    <FadeIn>
-      <main className="shell">
-      <h1 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 40, lineHeight: "44px" }}>Company settings</h1>
-      <section className="glass" style={{ padding: 32, marginTop: 24, maxWidth: 640 }}>
-        <label style={{ display: "block", marginBottom: 16 }}>
-          <span style={{ display: "block", marginBottom: 8, color: "#4A6256" }}>Company name</span>
-          <input style={{ width: "100%", height: 56, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 16px" }} defaultValue="Atlas Studio" />
-        </label>
-        <button type="button" style={{ height: 48, padding: "0 24px", borderRadius: 999, border: 0, background: "#1F6B4E", color: "white", fontWeight: 600, cursor: "pointer" }}>
-          Save changes
-        </button>
-      </section>
+    <main className="shell" style={{ maxWidth: 720 }}>
+      <PageHeader eyebrow="Settings" title="Company" description="The opening balance is a cash movement: correct it from the Cash page with an adjustment." />
+      <Card>
+        <ActionForm action={updateCompanyAction}>
+          <Field label="Company name" name="name" defaultValue={company.name} required />
+          <Field label="Sector" name="sector" defaultValue={company.sector} required />
+          <Field label="Low-cash alert threshold (DNT)" name="threshold" inputMode="decimal" defaultValue={moneyInput(company.forecastThresholdMillimes)}
+            hint="The dashboard warns when the forecast falls below this amount. 0 turns it off." />
+          <SubmitButton>Save</SubmitButton>
+        </ActionForm>
+      </Card>
     </main>
-    </FadeIn>
   );
 }

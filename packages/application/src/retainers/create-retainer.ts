@@ -1,8 +1,8 @@
-import { CompanyId, UserId, PartyId, Retainer, Money, DateOnly } from "@cashpilot/domain";
-import { RetainerRepository } from "../ports/retainer-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { CompanyId, PartyId, Retainer, Money, DateOnly, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import type { RetainerRepository } from "../ports/retainer-repository";
+import type { PartyRepository } from "../ports/party-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
+import { authorize } from "../access/authorize";
 
 export interface CreateRetainerInput {
   userId: string;
@@ -15,15 +15,24 @@ export interface CreateRetainerInput {
 }
 
 export class CreateRetainer {
-  constructor(private readonly retainers: RetainerRepository, private readonly memberships: MembershipRepository) {}
+  constructor(
+    private readonly retainers: RetainerRepository,
+    private readonly parties: PartyRepository,
+    private readonly memberships: MembershipRepository,
+  ) {}
+
   async execute(input: CreateRetainerInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    await authorize(this.memberships, input, "retainers.manage");
+    const companyId = CompanyId.from(input.companyId);
+    const customer = await this.parties.byId(PartyId.from(input.customerId));
+    if (!customer || !customer.companyId.equals(companyId) || customer.type !== "customer") {
+      throw new DomainError(DOMAIN_ERROR_CODES.PARTY_NOT_FOUND, "Customer not found");
+    }
     const retainer = Retainer.create({
-      companyId: CompanyId.from(input.companyId),
-      customerId: PartyId.from(input.customerId),
+      companyId,
+      customerId: customer.id,
       name: input.name,
-      amount: Money.of(input.amountMillimes),
+      amount: Money.positive(input.amountMillimes),
       intervalDays: input.intervalDays,
       nextGenerationDate: DateOnly.from(input.nextGenerationDate),
     });

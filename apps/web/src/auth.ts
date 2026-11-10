@@ -1,28 +1,27 @@
 import NextAuth from "next-auth";
+import type { NextAuthConfig, NextAuthResult } from "next-auth";
 import Google from "next-auth/providers/google";
-import type { NextAuthConfig } from "next-auth";
 
+/**
+ * OAuth only (UNDERSTANDING §0): no passwords stored. Short sessions (8 h,
+ * refreshed hourly) in an httpOnly cookie (P2-5). The middleware uses
+ * `authorized` to check that a session exists; permissions are checked in
+ * the use cases.
+ */
 const config: NextAuthConfig = {
   providers: [Google],
-  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 7 },
+  session: { strategy: "jwt", maxAge: 8 * 60 * 60, updateAge: 60 * 60 },
   trustHost: true,
   secret: process.env.AUTH_SECRET,
   pages: { signIn: "/login" },
   callbacks: {
-    authorized: ({ auth, request: { nextUrl } }) => {
-      if (auth?.user) return true;
-      return false;
-    },
-  },
-  logger: {
-    warn: (msg) => console.warn("[authjs-warn]", msg),
-    error: (msg) => console.error("[authjs-error]", msg),
+    authorized: ({ auth }) => Boolean(auth?.user),
   },
 };
 
-const nextAuth = NextAuth(config);
+const nextAuth: NextAuthResult = NextAuth(config);
 
-export const handlers = nextAuth.handlers;
-export const auth = nextAuth.auth as any;
-export const signIn = nextAuth.signIn as any;
-export const signOut = nextAuth.signOut as any;
+export const handlers: NextAuthResult["handlers"] = nextAuth.handlers;
+export const auth: NextAuthResult["auth"] = nextAuth.auth;
+export const signIn: NextAuthResult["signIn"] = nextAuth.signIn;
+export const signOut: NextAuthResult["signOut"] = nextAuth.signOut;

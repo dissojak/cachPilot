@@ -1,67 +1,65 @@
-import { CompanyId, UserId, InvoiceId, Payment, Money, DateOnly, CashMovement } from "@cashpilot/domain";
-import { InvoiceRepository } from "../ports/invoice-repository";
-import { PaymentRepository } from "../ports/payment-repository";
-import { CashMovementRepository } from "../ports/cash-movement-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { TransactionManager } from "../ports/transaction-manager";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { CompanyId, UserId, InvoiceId, PaymentId, Payment, Money, CashMovement, CashMovementId, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import type { InvoiceRepository } from "../ports/invoice-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
+import type { FinancialLedger } from "../ports/financial-ledger";
+import type { AuditLogRepository } from "../ports/audit-log-repository";
+import type { IdGenerator } from "../ports/id-generator";
+import type { Clock } from "../ports/clock";
+import { authorize } from "../access/authorize";
+import { realizedDate } from "../access/dates";
 
 export interface RecordPaymentInput {
   userId: string;
   companyId: string;
   invoiceId: string;
+  /** Generated when the form is rendered: submitting twice is rejected (D5). */
+  operationId: string;
   amountMillimes: number;
   paymentDate: string;
   method: string;
   note?: string;
 }
 
+/** BR-09/BR-10: a payment reduces the remaining amount and creates exactly one cash movement. */
 export class RecordPayment {
   constructor(
     private readonly invoices: InvoiceRepository,
-    private readonly payments: PaymentRepository,
-    private readonly movements: CashMovementRepository,
+    private readonly ledger: FinancialLedger,
     private readonly memberships: MembershipRepository,
-    private readonly transactions: TransactionManager,
+    private readonly audit: AuditLogRepository,
+    private readonly ids: IdGenerator,
+    private readonly clock: Clock,
   ) {}
 
   async execute(input: RecordPaymentInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    await authorize(this.memberships, input, "payments.record");
+    const companyId = CompanyId.from(input.companyId);
+    const invoice = await this.invoices.byId(InvoiceId.from(input.invoiceId));
+    if (!invoice || !invoice.companyId.equals(companyId)) {
+      throw new DomainError(DOMAIN_ERROR_CODES.INVOICE_NOT_FOUND, "Invoice not found");
+    }
 
-    return this.transactions.run(async () => {
-      const invoice = await this.invoices.byId(InvoiceId.from(input.invoiceId));
-      if (!invoice || !invoice.companyId.equals(CompanyId.from(input.companyId))) {
-        throw new DomainError(DOMAIN_ERROR_CODES.INVOICE_NOT_FOUND, "Invoice not found");
-      }
-      const amount = Money.of(input.amountMillimes);
-      invoice.applyPayment(amount);
+    const expectedPreviousRemaining = invoice.remaining;
+    const amount = Money.positive(input.amountMillimes);
+    invoice.applyPayment(amount);
 
-      const payment = Payment.create({
-        companyId: CompanyId.from(input.companyId),
-        invoiceId: InvoiceId.from(input.invoiceId),
-        amount,
-        paymentDate: DateOnly.from(input.paymentDate),
-        method: input.method,
-        note: input.note,
-        recordedBy: UserId.from(input.userId),
-      });
-      await this.payments.save(payment);
-      await this.invoices.save(invoice);
-
-      const movement = CashMovement.create({
-        companyId: CompanyId.from(input.companyId),
-        type: "invoice_payment",
-        amountMillimes: amount.amount,
-        movementDate: DateOnly.from(input.paymentDate),
-        sourceType: "payment",
-        sourceId: payment.id.value,
-        actorId: UserId.from(input.userId),
-      });
-      await this.movements.save(movement);
-
-      return { payment: payment.snapshot(), invoice: invoice.snapshot() };
+    const payment = Payment.create({
+      id: PaymentId.from(input.operationId),
+      companyId,
+      invoiceId: invoice.id,
+      amount,
+      paymentDate: realizedDate(input.paymentDate, this.clock),
+      method: input.method,
+      note: input.note,
+      recordedBy: UserId.from(input.userId),
     });
+    const movement = CashMovement.fromInvoicePayment({ id: CashMovementId.from(this.ids.newId()), payment });
+
+    await this.ledger.recordInvoicePayment({ invoice, expectedPreviousRemaining, payment, movement });
+    await this.audit.append({
+      companyId: input.companyId, actorId: input.userId, entityType: "invoice", entityId: input.invoiceId,
+      action: "payment.recorded", after: payment.snapshot(), at: this.clock.now().toISOString(),
+    });
+    return { payment: payment.snapshot(), invoice: invoice.snapshot() };
   }
 }

@@ -15,9 +15,9 @@
   "dependencies": {
     "@cashpilot/application": "workspace:*",
     "@cashpilot/config": "workspace:*",
-    "@cashpilot/db": "workspace:*",
-    "@cashpilot/domain": "workspace:*",
+    "@cashpilot/infra": "workspace:*",
     "@cashpilot/ui": "workspace:*",
+    "mongoose": "8.24.8",
     "motion": "^14.10.1",
     "next": "^15.0.0",
     "next-auth": "5.0.0-beta.32",
@@ -26,10 +26,10 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@cashpilot/infra": "workspace:*",
     "@playwright/test": "1.65.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
+    "@types/react-dom": "19.2.3",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.5.29",
     "playwright": "^1.48.0",

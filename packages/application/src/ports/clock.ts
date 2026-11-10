@@ -1,4 +1,4 @@
-import { DateOnly } from "@cashpilot/domain";
+import type { DateOnly } from "@cashpilot/domain";
 
 export interface Clock {
   today(): DateOnly;

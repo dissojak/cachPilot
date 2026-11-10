@@ -7,11 +7,13 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@cashpilot/config": "workspace:*",
+    "eslint": "^9.39.5",
     "typescript": "^5.6.0",
     "vitest": "^2.0.0"
   }

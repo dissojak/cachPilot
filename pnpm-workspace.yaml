@@ -3,3 +3,5 @@ packages:
   - "packages/*"
 allowBuilds:
   esbuild: true
+  # downloads MongoDB lazily on first test run; no install script needed
+  mongodb-memory-server: false

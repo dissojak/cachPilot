@@ -1,8 +1,7 @@
-import { CompanyId, UserId, Party } from "@cashpilot/domain";
-import { PartyRepository } from "../ports/party-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { authorize } from "../access/authorize";
+import { CompanyId, Party } from "@cashpilot/domain";
+import type { PartyRepository } from "../ports/party-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
 
 export interface CreatePartyInput {
   userId: string;
@@ -21,8 +20,7 @@ export class CreateParty {
   ) {}
 
   async execute(input: CreatePartyInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    await authorize(this.memberships, input, "parties.manage");
 
     const party = Party.create({
       companyId: CompanyId.from(input.companyId),

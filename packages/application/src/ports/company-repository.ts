@@ -1,5 +1,5 @@
-import { Company } from "@cashpilot/domain";
-import { CompanyId } from "@cashpilot/domain";
+import type { Company } from "@cashpilot/domain";
+import type { CompanyId } from "@cashpilot/domain";
 
 export interface CompanyRepository {
   byId(id: CompanyId): Promise<Company | null>;

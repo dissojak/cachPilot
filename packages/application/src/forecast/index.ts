@@ -1,2 +1,2 @@
 export * from "./get-forecast";
-export * from "./get-forecast-series";
+export { ForecastContextLoader } from "./forecast-context";

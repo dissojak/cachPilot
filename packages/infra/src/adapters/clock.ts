@@ -1,7 +1,8 @@
 import { DateOnly } from "@cashpilot/domain";
-import { Clock } from "@cashpilot/application";
+import type { Clock } from "@cashpilot/application";
 
+/** The only place that reads the system time. */
 export class SystemClock implements Clock {
-  today() { return DateOnly.from(new Date().toISOString().slice(0, 10)); }
+  today() { return DateOnly.fromDate(new Date()); }
   now() { return new Date(); }
 }

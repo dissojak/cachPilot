@@ -1,48 +1,48 @@
-import { useCases } from "@/container";
-import { requireActor } from "@/lib/auth-actor";
-import { money } from "@/lib/format";
 import Link from "next/link";
-import { createPartyAction } from "@/app/actions";
-import FadeIn from "@/components/fade-in";
+import { PageHeader, Card, EmptyState, StatusChip } from "@cashpilot/ui";
+import { useCases } from "@/container";
+import { requirePermission, can } from "@/lib/session";
+import { ActionForm, Field, SelectField, SubmitButton } from "@/components/form";
+import { createPartyAction } from "./actions";
 
 export default async function PartiesPage() {
-  const actor = await requireActor();
-  const parties = await useCases.listParties.execute({ userId: actor.userId, companyId: actor.companyId });
+  const actor = await requirePermission("parties.view");
+  const parties = await useCases.listParties.execute(actor);
 
   return (
-    <FadeIn>
-      <main className="shell motion-fade">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 24, marginBottom: 24 }}>
-        <div>
-          <p className="mono">Parties</p>
-          <h1 style={{ fontFamily: "Outfit, system-ui, sans-serif", fontSize: 40, lineHeight: "44px", margin: "8px 0 0" }}>Customers and suppliers</h1>
-        </div>
-      </header>
-
-      <section className="glass motion-slide" style={{ padding: 24, marginBottom: 24 }}>
-        <form action={createPartyAction} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-          <select name="type" style={{ height: 48, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 12px" }} defaultValue="customer">
-            <option value="customer">Customer</option>
-            <option value="supplier">Supplier</option>
-          </select>
-          <input name="name" placeholder="Name" style={{ height: 48, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 16px" }} />
-          <input name="email" placeholder="Email" style={{ height: 48, borderRadius: 16, border: "1px solid #CFE0CC", padding: "0 16px" }} />
-          <button type="submit" style={{ height: 48, borderRadius: 999, border: 0, background: "#1F6B4E", color: "white", fontWeight: 600, cursor: "pointer" }}>Add party</button>
-        </form>
-      </section>
-
-      <section style={{ display: "grid", gap: 12 }}>
-        {parties.map((party) => (
-          <article key={party.id} className="glass lift motion-pop" style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-            <div>
-              <strong style={{ display: "block", marginBottom: 4 }}>{party.name}</strong>
-              <span style={{ color: "#4A6256", fontSize: 13 }}>{party.type} · {party.email ?? "No email"}</span>
-            </div>
-            <Link href={`/parties/${party.id}`} style={{ color: "#1F6B4E", textDecoration: "underline", fontWeight: 600 }}>View history</Link>
-          </article>
-        ))}
-      </section>
+    <main className="shell">
+      <PageHeader eyebrow="Customers & suppliers" title="Parties" description="Each customer or supplier belongs to your company only, with its invoice and payment history." />
+      <div className="grid-2">
+        <Card title={`${parties.length} ${parties.length === 1 ? "party" : "parties"}`}>
+          {parties.length === 0
+            ? <EmptyState title="No customer yet" text="Add your first customer to start invoicing." />
+            : (
+              <div className="list">
+                {parties.map((party) => (
+                  <Link key={party.id} href={`/parties/${party.id}`} className="alert-item" style={{ borderLeftColor: party.type === "customer" ? "var(--pine-600)" : "var(--lake)" }}>
+                    <strong>{party.name}</strong>
+                    <small className="muted">{[party.email, party.phone].filter(Boolean).join(" · ") || "No contact details"}</small>{" "}
+                    <StatusChip status={party.type === "customer" ? "active" : "draft"} label={party.type === "customer" ? "Customer" : "Supplier"} />
+                  </Link>
+                ))}
+              </div>
+            )}
+        </Card>
+        {can(actor, "parties.manage") && (
+          <Card title="Add a customer or supplier">
+            <ActionForm action={createPartyAction} resetOnSuccess>
+              <SelectField label="Type" name="type" options={[{ value: "customer", label: "Customer" }, { value: "supplier", label: "Supplier" }]} />
+              <Field label="Name" name="name" required />
+              <div className="form-row">
+                <Field label="E-mail" name="email" type="email" />
+                <Field label="Phone" name="phone" type="tel" />
+              </div>
+              <Field label="Address" name="address" />
+              <SubmitButton>Add</SubmitButton>
+            </ActionForm>
+          </Card>
+        )}
+      </div>
     </main>
-    </FadeIn>
   );
 }

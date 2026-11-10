@@ -1,14 +1,14 @@
-import { CompanyId, UserId, PartyId, Invoice, InvoiceNumber, DateOnly, Money, InvoiceLineProps } from "@cashpilot/domain";
-import { InvoiceRepository } from "../ports/invoice-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { CompanyId, PartyId, Invoice, InvoiceNumber, DateOnly, Money, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import type { InvoiceLineInput } from "@cashpilot/domain";
+import type { InvoiceRepository } from "../ports/invoice-repository";
+import type { PartyRepository } from "../ports/party-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
+import { authorize } from "../access/authorize";
 
 export interface CreateInvoiceDraftInput {
   userId: string;
   companyId: string;
   customerId: string;
-  number: string;
   issueDate: string;
   dueDate: string;
   lines: { description: string; quantity: number; unitPriceMillimes: number }[];
@@ -17,24 +17,30 @@ export interface CreateInvoiceDraftInput {
 export class CreateInvoiceDraft {
   constructor(
     private readonly invoices: InvoiceRepository,
+    private readonly parties: PartyRepository,
     private readonly memberships: MembershipRepository,
   ) {}
 
   async execute(input: CreateInvoiceDraftInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    await authorize(this.memberships, input, "invoices.manage");
+    const companyId = CompanyId.from(input.companyId);
 
-    const lines: InvoiceLineProps[] = input.lines.map((line) => ({
+    // BR-01/BR-32: the customer must be a customer of this same company.
+    const customer = await this.parties.byId(PartyId.from(input.customerId));
+    if (!customer || !customer.companyId.equals(companyId) || customer.type !== "customer") {
+      throw new DomainError(DOMAIN_ERROR_CODES.PARTY_NOT_FOUND, "Customer not found");
+    }
+
+    const lines: InvoiceLineInput[] = input.lines.map((line) => ({
       description: line.description,
       quantity: line.quantity,
-      unitPrice: Money.of(line.unitPriceMillimes),
-      lineTotal: Money.of(line.unitPriceMillimes * line.quantity),
+      unitPrice: Money.positive(line.unitPriceMillimes),
     }));
 
     const invoice = Invoice.create({
-      companyId: CompanyId.from(input.companyId),
-      customerId: PartyId.from(input.customerId),
-      number: InvoiceNumber.from(input.number),
+      companyId,
+      customerId: customer.id,
+      number: InvoiceNumber.from(await this.invoices.nextNumber(companyId)),
       issueDate: DateOnly.from(input.issueDate),
       dueDate: DateOnly.from(input.dueDate),
       lines,

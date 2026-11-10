@@ -88,3 +88,5 @@ echo done
 - Adem: MongoDB persistence wired with in-memory fallback, idempotent seed, retry connect, and runtime fixes.
 
 - Adem (2026-11-08): dashboard/forecast/invoices now read from MongoDB (no hardcoded demo numbers); members page lists real roles from memberships collection; sidebar + layout resolve role from DB; fixed dev-mode Mongoose buffering timeouts via ensureDb() gate; dev server runs under launchd (label cashpilot.dev).
+
+- Adem (2026-11-11): ✅ architecture fix per docs/FIX-PLAN.md — role permissions enforced in every use case, transactional and idempotent payments (FinancialLedger), opening balance as a cash movement (no double count), forecast/simulation with daily series and shortage windows, onboarding instead of implicit company membership, typed Mongo adapters with mappers (cash movements now store companyId), real PDF export, no seed/dummy data (app reads only MongoDB), depcruise layer rules in CI, 186 tests (domain, use cases, Mongo integration), project ARCHITECTURE.md and README.

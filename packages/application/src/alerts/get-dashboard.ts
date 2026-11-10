@@ -1,48 +1,45 @@
-import { CompanyId, UserId } from "@cashpilot/domain";
-import { CompanyRepository } from "../ports/company-repository";
-import { InvoiceRepository } from "../ports/invoice-repository";
-import { ExpenseRepository } from "../ports/expense-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { CashMovementRepository } from "../ports/cash-movement-repository";
-import { Clock } from "../ports/clock";
-import { GetForecast } from "../forecast/get-forecast";
-import { ListAlerts } from "./list-alerts";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { CompanyId, AlertEvaluator, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import type { CompanyRepository } from "../ports/company-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
+import type { Clock } from "../ports/clock";
+import { authorize } from "../access/authorize";
+import { describeForecast, seriesOf } from "../forecast/forecast-context";
+import type { ForecastContextLoader } from "../forecast/forecast-context";
 
 export interface GetDashboardInput { userId: string; companyId: string; }
 
+/** M10: real balance, 30/60/90 projection, alerts — loaded once, computed by the domain. */
 export class GetDashboard {
   constructor(
+    private readonly loader: ForecastContextLoader,
     private readonly companies: CompanyRepository,
-    private readonly invoices: InvoiceRepository,
-    private readonly expenses: ExpenseRepository,
     private readonly memberships: MembershipRepository,
-    private readonly movements: CashMovementRepository,
     private readonly clock: Clock,
-    private readonly getForecast: GetForecast,
-    private readonly listAlerts: ListAlerts,
   ) {}
 
   async execute(input: GetDashboardInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    await authorize(this.memberships, input, "dashboard.view");
     const company = await this.companies.byId(CompanyId.from(input.companyId));
     if (!company) throw new DomainError(DOMAIN_ERROR_CODES.COMPANY_NOT_FOUND, "Company not found");
-
-    const movements = await this.movements.byCompany(CompanyId.from(input.companyId));
-    const realBalanceMillimes = movements.reduce((sum, movement) => sum + movement.amountMillimes, company.snapshot().openingBalanceMillimes);
-    const forecast = await this.getForecast.execute(input);
-    const alerts = await this.listAlerts.execute(input);
+    const today = this.clock.today();
+    const context = await this.loader.load(input.companyId, today);
+    const alerts = new AlertEvaluator().evaluate({
+      today,
+      invoices: context.invoices,
+      expenses: context.expenses,
+      series: seriesOf(context.inputs),
+      threshold: company.forecastThreshold,
+    });
 
     return {
       company: company.snapshot(),
-      realBalanceMillimes,
-      forecast,
+      realBalanceMillimes: context.inputs.referenceBalance.amount,
+      forecast: describeForecast(context.inputs),
       alerts,
       counts: {
-        invoices: (await this.invoices.byCompany(CompanyId.from(input.companyId))).length,
-        expenses: (await this.expenses.byCompany(CompanyId.from(input.companyId))).length,
+        openInvoices: context.invoices.filter((invoice) => invoice.expectedReceipt() !== null).length,
+        overdueInvoices: context.invoices.filter((invoice) => invoice.isOverdue(today)).length,
+        pendingExpenses: context.expenses.filter((expense) => expense.status === "submitted").length,
         alerts: alerts.length,
       },
     };

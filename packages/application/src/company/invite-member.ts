@@ -1,44 +1,42 @@
-import { CompanyId, UserId } from "@cashpilot/domain";
-import { Membership } from "@cashpilot/domain";
-import { MembershipRepository } from "../ports/membership-repository";
-import { UserRepository } from "../ports/user-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { CompanyId, Membership, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import type { MembershipRole } from "@cashpilot/domain";
+import type { MembershipRepository } from "../ports/membership-repository";
+import type { UserRepository } from "../ports/user-repository";
+import type { AuditLogRepository } from "../ports/audit-log-repository";
+import type { Clock } from "../ports/clock";
+import { authorize } from "../access/authorize";
 
 export interface InviteMemberInput {
-  actorUserId: string;
-  companyId: string;
   userId: string;
-  role: "owner" | "finance_manager" | "collaborator";
+  companyId: string;
+  /** The person must have signed in once so their account exists. */
+  email: string;
+  role: MembershipRole;
 }
 
 export class InviteMember {
   constructor(
     private readonly memberships: MembershipRepository,
     private readonly users: UserRepository,
+    private readonly audit: AuditLogRepository,
+    private readonly clock: Clock,
   ) {}
 
   async execute(input: InviteMemberInput) {
-    const actor = await this.memberships.byUserAndCompany(
-      UserId.from(input.actorUserId),
-      CompanyId.from(input.companyId),
-    );
-    if (!actor || actor.role !== "owner") {
-      throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Only the owner can invite members");
-    }
-
-    const user = await this.users.byId(UserId.from(input.userId));
+    await authorize(this.memberships, input, "members.manage");
+    const user = await this.users.byEmail(input.email.trim().toLowerCase());
     if (!user) {
-      throw new DomainError(DOMAIN_ERROR_CODES.USER_NOT_FOUND, "User not found");
+      throw new DomainError(DOMAIN_ERROR_CODES.USER_NOT_FOUND, "No account with this e-mail yet: ask them to sign in once first");
     }
-
-    const membership = Membership.create(
-      UserId.from(input.userId),
-      CompanyId.from(input.companyId),
-      input.role,
-    );
-    await this.memberships.save(membership);
-
-    return { userId: input.userId, companyId: input.companyId, role: input.role };
+    const companyId = CompanyId.from(input.companyId);
+    if (await this.memberships.byUserAndCompany(user.id, companyId)) {
+      throw new DomainError(DOMAIN_ERROR_CODES.DUPLICATE_OPERATION, "This person is already a member");
+    }
+    await this.memberships.save(Membership.create(user.id, companyId, input.role));
+    await this.audit.append({
+      companyId: input.companyId, actorId: input.userId, entityType: "membership", entityId: user.id.value,
+      action: "member.invited", after: input.role, at: this.clock.now().toISOString(),
+    });
+    return { userId: user.id.value, companyId: input.companyId, role: input.role };
   }
 }

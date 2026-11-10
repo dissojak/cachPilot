@@ -1,17 +1,22 @@
-import { CompanyId, UserId } from "@cashpilot/domain";
-import { ExpenseRepository } from "../ports/expense-repository";
-import { MembershipRepository } from "../ports/membership-repository";
-import { DomainError } from "@cashpilot/domain";
-import { DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import { CompanyId } from "@cashpilot/domain";
+import type { ExpenseStatus } from "@cashpilot/domain";
+import type { ExpenseRepository } from "../ports/expense-repository";
+import type { MembershipRepository } from "../ports/membership-repository";
+import { authorize } from "../access/authorize";
 
-export interface ListExpensesInput { userId: string; companyId: string; status?: string; }
+export interface ListExpensesInput { userId: string; companyId: string; status?: ExpenseStatus; }
 
+/** A collaborator only sees the expenses they submitted (UNDERSTANDING §3). */
 export class ListExpenses {
   constructor(private readonly expenses: ExpenseRepository, private readonly memberships: MembershipRepository) {}
   async execute(input: ListExpensesInput) {
-    const membership = await this.memberships.byUserAndCompany(UserId.from(input.userId), CompanyId.from(input.companyId));
-    if (!membership) throw new DomainError(DOMAIN_ERROR_CODES.ACCESS_DENIED, "Access denied");
+    const membership = await authorize(this.memberships, input, "expenses.submit");
+    const seesAll = membership.can("expenses.viewAll");
     const items = await this.expenses.byCompany(CompanyId.from(input.companyId));
-    return input.status ? items.filter((item) => item.status === input.status).map((item) => item.snapshot()) : items.map((item) => item.snapshot());
+    return items
+      .map((item) => item.snapshot())
+      .filter((item) => seesAll || item.submittedBy === input.userId)
+      .filter((item) => !input.status || item.status === input.status)
+      .sort((a, b) => b.expenseDate.localeCompare(a.expenseDate));
   }
 }

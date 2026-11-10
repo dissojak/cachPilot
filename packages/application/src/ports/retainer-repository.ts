@@ -1,6 +1,6 @@
-import { Retainer } from "@cashpilot/domain";
-import { RetainerId } from "@cashpilot/domain";
-import { CompanyId } from "@cashpilot/domain";
+import type { Retainer } from "@cashpilot/domain";
+import type { RetainerId } from "@cashpilot/domain";
+import type { CompanyId } from "@cashpilot/domain";
 
 export interface RetainerRepository {
   byId(id: RetainerId): Promise<Retainer | null>;

@@ -1,5 +1,5 @@
-import { User } from "@cashpilot/domain";
-import { UserId } from "@cashpilot/domain";
+import type { User } from "@cashpilot/domain";
+import type { UserId } from "@cashpilot/domain";
 
 export interface UserRepository {
   byId(id: UserId): Promise<User | null>;

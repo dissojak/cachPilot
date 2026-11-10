@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
     "@cashpilot/ui",
     "@cashpilot/config"
   ],
+  // Mongoose must stay external (one instance per server). Next only externalizes it
+  // when it can resolve it from apps/web, hence the "mongoose" dependency in
+  // package.json — no code here imports it (packages/db does).
   serverExternalPackages: ["mongoose", "mongodb"]
 };
 

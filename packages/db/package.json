@@ -11,10 +11,12 @@
   },
   "devDependencies": {
     "@cashpilot/config": "workspace:*",
-    "typescript": "^5.6.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.5",
+    "typescript": "^5.6.0"
   },
   "scripts": {
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit"
   }
 }

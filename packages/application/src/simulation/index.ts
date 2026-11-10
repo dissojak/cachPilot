@@ -4,3 +4,4 @@ export * from "./run-simulation";
 export * from "./compare-scenarios";
 export * from "./list-scenarios";
 export * from "./get-scenario";
+export * from "./remove-hypothesis";

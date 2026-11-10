@@ -11,7 +11,7 @@ Guiding principle: **métier > framework**. Next.js, Prisma and Turborepo are re
 
 ## 0. Before writing any code
 
-1. Read `docs/ARCHITECTURE.md` (if it is missing, ask the user to add it; do not improvise the architecture from memory).
+1. Read `docs/reference/COURSE-ARCHITECTURE.md` (the course) and `docs/ARCHITECTURE.md` (this project's choices) (if they are missing, ask the user to add it; do not improvise the architecture from memory).
 2. Read the project brief (`docs/PROJECT.md` or the idea the user described). If no brief exists, ask the user for it and write it to `docs/PROJECT.md` before coding: users/roles, features, business rules, validation criteria, grading criteria.
 3. Choose one package scope from the project name (for example `@campus/*`, `@cashpilot/*`, `@localimpact/*`) and use it everywhere. The course uses `@acme/*`; treat it as a placeholder.
 4. Check installed versions of Next.js, Prisma, Turborepo, Zod and Vitest, and verify version-sensitive APIs in the official docs rather than relying on the course snippets or memory. Known examples: in Next.js 16+ `middleware.ts` is named `proxy.ts`; Prisma 7 changes client generation and configuration.

@@ -1,6 +1,7 @@
-import { Company, User, Membership, Party, Invoice, Payment, Expense, CashMovement, Scenario, Retainer } from "@cashpilot/domain";
-import { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId } from "@cashpilot/domain";
-import {
+import { DateOnly, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
+import type { Company, User, Membership, Party, Invoice, Payment, Expense, CashMovement, Scenario, Retainer, Money } from "@cashpilot/domain";
+import type { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId } from "@cashpilot/domain";
+import type {
   CompanyRepository,
   UserRepository,
   MembershipRepository,
@@ -13,6 +14,11 @@ import {
   RetainerRepository,
   AuditLogRepository,
   AuditLogEntry,
+  FinancialLedger,
+  Clock,
+  IdGenerator,
+  PdfExporter,
+  InvoicePdfData,
 } from "../ports";
 
 export class InMemoryCompanyRepository implements CompanyRepository {
@@ -46,32 +52,83 @@ export class InMemoryPartyRepository implements PartyRepository {
 }
 
 export class InMemoryInvoiceRepository implements InvoiceRepository {
-  private readonly items = new Map<string, Invoice>();
+  readonly items = new Map<string, Invoice>();
+  private readonly counters = new Map<string, number>();
   async byId(id: InvoiceId) { return this.items.get(id.value) ?? null; }
   async byCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
   async save(invoice: Invoice) { this.items.set(invoice.id.value, invoice); }
-  async nextNumber() { return `INV-${this.items.size + 1}`; }
+  async nextNumber(companyId: CompanyId) {
+    const next = (this.counters.get(companyId.value) ?? 0) + 1;
+    this.counters.set(companyId.value, next);
+    return `INV-${String(next).padStart(4, "0")}`;
+  }
 }
 
 export class InMemoryPaymentRepository implements PaymentRepository {
-  private readonly items = new Map<string, Payment>();
+  readonly items = new Map<string, Payment>();
   async byId(id: PaymentId) { return this.items.get(id.value) ?? null; }
   async byInvoice(invoiceId: InvoiceId) { return [...this.items.values()].filter((item) => item.invoiceId.equals(invoiceId)); }
   async byCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
-  async save(payment: Payment) { this.items.set(payment.id.value, payment); }
 }
 
 export class InMemoryExpenseRepository implements ExpenseRepository {
-  private readonly items = new Map<string, Expense>();
+  readonly items = new Map<string, Expense>();
   async byId(id: ExpenseId) { return this.items.get(id.value) ?? null; }
   async byCompany(companyId: CompanyId) { return [...this.items.values()].filter((item) => item.companyId.equals(companyId)); }
   async save(expense: Expense) { this.items.set(expense.id.value, expense); }
 }
 
 export class InMemoryCashMovementRepository implements CashMovementRepository {
-  private readonly items: CashMovement[] = [];
+  readonly items: CashMovement[] = [];
   async byCompany(companyId: CompanyId) { return this.items.filter((item) => item.companyId.equals(companyId)); }
-  async save(movement: CashMovement) { this.items.push(movement); }
+}
+
+/**
+ * Same contract as the Mongo ledger: duplicate ids and stale invoice amounts
+ * are rejected before anything is written.
+ */
+export class InMemoryFinancialLedger implements FinancialLedger {
+  /** Remaining amount last committed per invoice (what a database would hold). */
+  private readonly committedRemaining = new Map<string, number>();
+
+  constructor(
+    private readonly invoices: InMemoryInvoiceRepository,
+    private readonly payments: InMemoryPaymentRepository,
+    private readonly expenses: InMemoryExpenseRepository,
+    private readonly movements: InMemoryCashMovementRepository,
+  ) {}
+
+  async recordInvoicePayment(input: { invoice: Invoice; expectedPreviousRemaining: Money; payment: Payment; movement: CashMovement }) {
+    if (this.payments.items.has(input.payment.id.value)) throw duplicate();
+    this.assertNewMovement(input.movement);
+    const committed = this.committedRemaining.get(input.invoice.id.value);
+    if (committed !== undefined && committed !== input.expectedPreviousRemaining.amount) {
+      throw new DomainError(DOMAIN_ERROR_CODES.CONCURRENT_UPDATE, "The invoice changed meanwhile, please retry");
+    }
+    this.committedRemaining.set(input.invoice.id.value, input.invoice.remaining.amount);
+    this.invoices.items.set(input.invoice.id.value, input.invoice);
+    this.payments.items.set(input.payment.id.value, input.payment);
+    this.movements.items.push(input.movement);
+  }
+
+  async recordExpensePayment(input: { expense: Expense; movement: CashMovement }) {
+    this.assertNewMovement(input.movement);
+    this.expenses.items.set(input.expense.id.value, input.expense);
+    this.movements.items.push(input.movement);
+  }
+
+  async recordMovement(movement: CashMovement) {
+    this.assertNewMovement(movement);
+    this.movements.items.push(movement);
+  }
+
+  private assertNewMovement(movement: CashMovement) {
+    if (this.movements.items.some((item) => item.id.equals(movement.id))) throw duplicate();
+  }
+}
+
+function duplicate() {
+  return new DomainError(DOMAIN_ERROR_CODES.DUPLICATE_OPERATION, "This operation was already recorded");
 }
 
 export class InMemoryScenarioRepository implements ScenarioRepository {
@@ -89,7 +146,24 @@ export class InMemoryRetainerRepository implements RetainerRepository {
 }
 
 export class InMemoryAuditLogRepository implements AuditLogRepository {
-  private readonly items: AuditLogEntry[] = [];
-  async save(entry: AuditLogEntry) { this.items.push(entry); }
+  readonly items: AuditLogEntry[] = [];
+  async append(entry: AuditLogEntry) { this.items.push(entry); }
   async byCompany(companyId: string) { return this.items.filter((item) => item.companyId === companyId); }
+}
+
+export class FixedClock implements Clock {
+  constructor(private current: string) {}
+  today() { return DateOnly.from(this.current); }
+  now() { return new Date(`${this.current}T09:00:00.000Z`); }
+  set(date: string) { this.current = date; }
+}
+
+export class SequentialIds implements IdGenerator {
+  private next = 0;
+  newId() { this.next += 1; return `id-${this.next}`; }
+}
+
+export class RecordingPdfExporter implements PdfExporter {
+  readonly calls: InvoicePdfData[] = [];
+  async exportInvoice(data: InvoicePdfData) { this.calls.push(data); return new Uint8Array([37, 80, 68, 70]); }
 }
