@@ -342,7 +342,6 @@ Authentication note: OAuth via Auth.js/NextAuth (or Clerk if we prefer a managed
 - **Prisma leakage:** `@prisma/client` types must not leave `packages/infra`/`packages/db`.
 - **Empty use cases:** a use case that only forwards to a repository is a smell; orchestration and authorization belong there.
 - **Scenario mutation:** simulation must not call `save`; tests must assert repositories unchanged.
-- **Seed and demo data:** needed for defense and grading; must include the full defense scenario.
 
 ## 13. Candidate "original features" for the sector choice
 
@@ -367,7 +366,7 @@ Vertical slices per feature after the skeleton and the first slice, following th
 - **Milestone 2 — V1 (access, customers, invoices, partial payments):** domain core (Company, User, Membership, Party, Invoice, Payment, Money) + unit tests; use cases for register company, create/validate/cancel invoice, record payment; in-memory repositories + use-case tests; Prisma schema/migrations/repositories + integration tests; minimal App Router pages, Server Actions, Zod; seed demo data; demo: an invoice with a remaining amount.
 - **Milestone 3 — V2 (expenses, approval, real cash):** Expense aggregate + status machine; submit/approve/refuse/pay use cases; cash movements + real balance; Prisma adapters + tests; UI with approval flow; verify balance after several operations.
 - **Milestone 4 — V3 (forecast, simulation, alerts):** ForecastEngine + forecast use cases + UI chart; Scenario + hypotheses + simulation + comparison; AlertEvaluator + dashboard + alerts; E2E critical journeys; responsive + loading/error/empty states.
-- **Milestone 5 — Livraison (delivery):** deployment on Vercel (root `apps/web`); no Docker. README with install, config, demo accounts, tests, limitations and declaration of AI/external resources; seed demo accounts; defense scenario rehearsal; individual code explanation readiness.
+- **Milestone 5 — Livraison (delivery):** deployment on Vercel (root `apps/web`); no Docker. README with install, config, tests, limitations and declaration of AI/external resources; defense scenario rehearsal; individual code explanation readiness.
 
 ## 15. Open questions for the team
 

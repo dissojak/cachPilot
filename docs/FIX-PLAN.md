@@ -4,7 +4,7 @@
 > **Written:** 2026-11-10, from a full read of the repo at commit `58f8c5a` against the course PDF
 > `Next.js-Clean-Architecture-et-Monorepo.pdf`, `docs/PROJECT.md`, `docs/UNDERSTANDING.md` and the skill
 > `.opencode/skills/clean-nextjs-monorepo/SKILL.md`.
-> **Status:** plan only. No code has been changed.
+> **Status (2026-11-11):** done and merged on `main`. Team decision: **no demo data and no demo accounts** — D10, D11, the demo login in T4.3, the seed in T3.6 and the demo parts of T5.2/T6.2/T6.3 are cancelled.
 
 ---
 
@@ -126,7 +126,6 @@ Accepted deviations from the course (decided in `docs/UNDERSTANDING.md` §0, kee
 | P3-5 | Invoice form has hard-coded customers (`party-acme`, `party-globex`); amounts are typed in millimes; inputs have no `<label>` (accessibility). |
 | P3-6 | No `loading.tsx` / `error.tsx` in the `(app)` group, few empty states. |
 | P3-7 | Collaborator sees the dashboard/forecast in the nav (decision: no dashboard for collaborators). |
-| P3-8 | No demo accounts usable by graders (only Google OAuth). README says "OAuth sign-in creates the user" — graders cannot log in as owner/finance/collaborator. |
 | P3-9 | `packages/ui` is empty; every page repeats the same inline styles and its own `formatDnt` (two different money formats exist: `lib/format.ts` English vs pages French). |
 | P3-10 | README declares Tailwind/shadcn/Cloudinary/Resend/Axiom which are not used; no AI-tools declaration details; no "known limitations". |
 
@@ -145,8 +144,6 @@ Accepted deviations from the course (decided in `docs/UNDERSTANDING.md` §0, kee
 | D7 | Forecast rules move into entities: `Invoice.expectedReceipt()` and `Expense.plannedDisbursement()` return the forecast input or `null`. One domain function `buildForecastInputs(...)` is used by every forecast/simulation use case. |
 | D8 | Simulation works on a **daily series** from reference date to +90 days; shortage windows = consecutive days with negative balance (start, end, minimum, date of minimum). Client delay matches by `invoiceId`. |
 | D9 | Active company: stored in an httpOnly cookie `cp_company`; validated against memberships on every request; default = first membership. A user with no membership is redirected to `/onboarding` to create a company. **Nobody is auto-added to the demo company.** |
-| D10 | Demo accounts for graders: an Auth.js **Credentials provider named "demo"**, enabled **only when `DEMO_LOGIN=true`**, offering three buttons (owner / finance / collaborator) for the three seeded demo users. Off by default. **⚠️ Ask the user to confirm D10 before T4.3.** |
-| D11 | Seed is a script: `pnpm --filter @cashpilot/infra seed` (file `packages/infra/scripts/seed.ts`, run with `tsx`). It is idempotent and never runs on page load. In-memory mode (no `DATABASE_URL`) seeds once at container start via the same seed function. |
 | D12 | Presentation imports `DomainError` / codes through `@cashpilot/application` (re-export), never `@cashpilot/domain`. |
 | D13 | Money in forms is typed in **DNT** (e.g. `2000.500`) and converted to millimes with a pure string parser in `apps/web/src/lib/money-input.ts` (no float math). Display uses one formatter `lib/format.ts` (`2,000.500 DNT`, English, per `UNDERSTANDING.md` §0). |
 | D14 | PDF: `pdf-lib` in `packages/infra/src/pdf/`. The `PdfExporter` port receives the invoice data (snapshot + company + customer names), not an id. |

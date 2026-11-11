@@ -515,10 +515,9 @@ Tests:
    - Vercel project with root directory `apps/web`.
    - MongoDB Atlas production database.
    - OAuth production credentials.
-   - Seed production demo data.
 
 4. Documentation
-   - README with install, config, demo accounts, tests, limitations.
+   - README with install, config, tests, limitations.
    - Declare AI tools and external resources.
    - Architecture justification.
 

@@ -24,7 +24,7 @@ Percentages are effort estimates, not exact hours. Replace `Teammate B` and `Tea
 | Phase 1: Auth.js OAuth setup | 3% | Adem |
 | Phase 1: shared Server Action/Zod pattern | 2% | Adem |
 | Phase 1: logging and audit shape | 2% | Adem |
-| Phase 1: seed/demo data plan | 2% | Adem |
+| Phase 1: data rules (real data only, no seed) | 2% | Adem |
 | Slice 1: auth, company, dashboard shell | 9% | Adem |
 | Slice 2: parties | 4% | Teammate B |
 | Slice 3: invoices and partial payments | 12% | Adem |
@@ -37,7 +37,7 @@ Percentages are effort estimates, not exact hours. Replace `Teammate B` and `Tea
 | Phase 3: tests and E2E | 6% | Shared (Adem 3%, B 1.5%, C 1.5%) |
 | Phase 3: guard rails and CI | 2% | Shared (Adem 1%, B 0.5%, C 0.5%) |
 | Phase 3: Vercel deployment | 2% | Adem |
-| Phase 3: README and demo data | 2% | Shared (Adem 1%, B 0.5%, C 0.5%) |
+| Phase 3: README | 2% | Shared (Adem 1%, B 0.5%, C 0.5%) |
 
 Approximate totals:
 - Adem: 60%

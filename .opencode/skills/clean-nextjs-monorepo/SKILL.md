@@ -97,7 +97,7 @@ When configuring dependency-cruiser, forbid domain → `@prisma|next|react`, app
 ### Infrastructure
 - `implements <Port>` for every adapter so the compiler checks conformance. Prisma appears **only** here and in `packages/db`.
 - Mappers (`toDomain` / `toPersistence`) separate table models from domain models; `@prisma/client` types never leave this package.
-- Always provide an **in-memory adapter** for each repository (tests and demo mode). Integration-test the Prisma adapters against a real Postgres (Testcontainers) with a few tests per repository.
+- Always provide an **in-memory adapter** for each repository (tests). Integration-test the Prisma adapters against a real Postgres (Testcontainers) with a few tests per repository.
 - Wrap multi-step writes that must be atomic in a transaction inside the adapter, behind a port method (do not leak transactions into use cases).
 
 ### Presentation (`apps/web`)
@@ -146,7 +146,7 @@ Do not move on while a check fails. Never disable a lint/dependency rule to make
 2. **Domain**: entities, value objects, domain errors + unit tests for the project's core rules.
 3. **Use cases + ports**: the first vertical slice only; then the rest feature by feature.
 4. **Fakes**: in-memory repositories + use-case tests.
-5. **Prisma**: `packages/db` schema/migrations, Prisma repositories + mappers + integration tests, seed with demo data and demo accounts.
+5. **Prisma**: `packages/db` schema/migrations, Prisma repositories + mappers + integration tests.
 6. **Interface**: App Router pages, Server Actions, Zod schemas, loading/error/empty states, responsive layout, accessible navigation, `apps/web` role-based route protection.
 7. **Guard rails**: dependency-cruiser, typed env, GitHub Actions CI.
 8. **Delivery**: critical E2E journeys, deployment (Vercel or Docker), README.
@@ -154,11 +154,11 @@ Do not move on while a check fails. Never disable a lint/dependency rule to make
 Build **vertical slices** (domain → use case → adapter → UI) per feature in the order of the project's milestones, not layer by layer across the whole app, once the skeleton and the first slice exist.
 
 ## 10. Project-level requirements (apply to whatever idea is chosen)
-- Persistent database; data survives reloads; seed script with demo data.
+- Persistent database; data survives reloads; the app shows only real data (no seed, no demo accounts).
 - Server-side validation and **server-side permission checks** for every mutation; forbidden actions must be blocked on the server, not only hidden in the UI.
 - Reusable components, several pages, loading/error/empty states, responsive UI, accessible navigation.
 - Regular, identifiable Git commits (small commits per step, clear messages; one concern per commit).
-- `README.md`: installation, configuration (`.env.example`), demo accounts, how to run tests, known limitations. Declare any use of AI tools or external resources (the course requires this declaration).
+- `README.md`: installation, configuration (`.env.example`), how to run tests, known limitations. Declare any use of AI tools or external resources (the course requires this declaration).
 - `docs/ARCHITECTURE.md` justifying the choices (layers, ports, trade-offs) — this is a course deliverable.
 - Be ready to explain every part of the code: prefer simple, readable code over cleverness, and add short comments where a business rule is not obvious. The student must be able to modify it live.
 

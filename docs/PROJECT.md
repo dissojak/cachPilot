@@ -4,7 +4,7 @@
 > Gestion et prévision de trésorerie pour les petites entreprises
 > Auteur du sujet : Mohamed Amine Ben Rhouma — Ingénieur et enseignant
 >
-> Ce fichier est la conversion Markdown fidèle du document `Projet_React_NextJS_CashPilot.docx`. Il est la **source de vérité fonctionnelle** du projet. L'architecture technique est décrite dans `docs/ARCHITECTURE.md`.
+> Ce fichier est la conversion Markdown du document `Projet_React_NextJS_CashPilot.docx`, adaptée par décision d'équipe : pas de données ni de comptes de démonstration (l'application n'affiche que les données réelles de la base). Il est la **source de vérité fonctionnelle** du projet. L'architecture technique est décrite dans `docs/ARCHITECTURE.md`.
 
 ---
 
@@ -86,7 +86,7 @@ Créer une entreprise avec un solde initial → émettre une facture → enregis
 | **2. Version 1** | Accès, clients, factures et paiements partiels. *Démonstration d'une facture avec reste à payer.* |
 | **3. Version 2** | Dépenses, approbation et trésorerie réelle. *Vérification du solde après plusieurs opérations.* |
 | **4. Version 3** | Prévisions, simulations et alertes. *Comparaison de deux scénarios avec données connues.* |
-| **5. Livraison** | Application déployée, README, données de démonstration et défense individuelle. |
+| **5. Livraison** | Application déployée, README et défense individuelle. |
 
 ### Suivi à chaque séance
 
@@ -108,7 +108,7 @@ Présenter une démonstration des tâches terminées, le tableau de tâches actu
 - Utiliser **React avec Next.js**, des **composants réutilisables** et une **base de données persistante**.
 - **Valider les entrées et les permissions côté serveur.**
 - Prévoir une **interface responsive**, les **états de chargement, d'erreur et de liste vide**.
-- Fournir un **README** avec installation, configuration et comptes de démonstration.
+- Fournir un **README** avec installation et configuration.
 
 ## 7. Personnalisation et périmètre
 
