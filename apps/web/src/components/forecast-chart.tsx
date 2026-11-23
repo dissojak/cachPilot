@@ -6,7 +6,7 @@ type Point = { date: string; balanceMillimes: number };
  * Daily balance as an SVG line (server-rendered, no JS). Base = solid green,
  * simulated = dashed clay. The zero line shows when cash runs out.
  */
-export function ForecastChart({ base, simulated, label }: { base: Point[]; simulated?: Point[]; label: string }) {
+export function ForecastChart({ base, simulated, label, baseLabel, simulatedLabel }: { base: Point[]; simulated?: Point[]; label: string; baseLabel?: string; simulatedLabel?: string }) {
   const width = 760;
   const height = 240;
   const pad = { top: 16, right: 16, bottom: 28, left: 16 };
@@ -33,8 +33,8 @@ export function ForecastChart({ base, simulated, label }: { base: Point[]; simul
         })}
       </svg>
       <figcaption className="legend">
-        <span>{simulated ? "Base forecast" : "Forecast balance"}</span>
-        {simulated && <span className="dashed">With hypotheses</span>}
+        <span>{baseLabel ?? (simulated ? "Base forecast" : "Forecast balance")}</span>
+        {simulated && <span className="dashed">{simulatedLabel ?? "With hypotheses"}</span>}
       </figcaption>
     </figure>
   );
