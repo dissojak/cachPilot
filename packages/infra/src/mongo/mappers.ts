@@ -99,6 +99,7 @@ export const expenseMapper = {
     amount: Money.of(doc.amountMillimes),
     expenseDate: DateOnly.from(doc.expenseDate),
     receiptFileId: doc.receiptFileId ?? undefined,
+    receiptUrl: doc.receiptUrl ?? undefined,
     status: doc.status,
     approval: doc.approval?.approver && doc.approval.decisionDate
       ? { approver: UserId.from(doc.approval.approver), decisionDate: DateOnly.from(doc.approval.decisionDate), reason: doc.approval.reason ?? undefined }

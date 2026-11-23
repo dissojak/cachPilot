@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { connectDb, mongoose } from "@cashpilot/db";
-import { Company, CompanyId, Invoice, InvoiceNumber, PartyId, DateOnly, Money, Payment, PaymentId, UserId, CashMovement, CashMovementId, DomainError } from "@cashpilot/domain";
-import { MongoCompanyRepository, MongoInvoiceRepository, MongoPaymentRepository, MongoCashMovementRepository } from "./repositories";
+import { Company, CompanyId, Invoice, InvoiceNumber, PartyId, DateOnly, Money, Payment, PaymentId, UserId, CashMovement, CashMovementId, DomainError, Expense } from "@cashpilot/domain";
+import { MongoCompanyRepository, MongoInvoiceRepository, MongoPaymentRepository, MongoCashMovementRepository, MongoExpenseRepository } from "./repositories";
 import { MongoFinancialLedger } from "./financial-ledger";
 
 /**
@@ -106,5 +106,41 @@ describe("mongo adapters", () => {
   it("never returns another company's data", async () => {
     expect(await new MongoInvoiceRepository().byCompany(CompanyId.from("company-zzz"))).toEqual([]);
     expect(await new MongoCashMovementRepository().byCompany(CompanyId.from("company-zzz"))).toEqual([]);
+  });
+});
+
+describe("mongo adapters: reversal and receipt link", () => {
+  it("finds a movement by id, and stores a reversal linked to its original", async () => {
+    const date = DateOnly.from("2026-11-05");
+    const original = CashMovement.adjustment({ id: CashMovementId.from("mv-adj-1"), companyId, actorId: user, date, amount: Money.of(-250_000), reason: "Bank fee" });
+    const ledger = new MongoFinancialLedger();
+    await ledger.recordMovement(original);
+
+    const movements = new MongoCashMovementRepository();
+    const loaded = await movements.byId(original.id);
+    expect(loaded?.snapshot()).toEqual(original.snapshot());
+    expect(await movements.byId(CashMovementId.from("does-not-exist"))).toBeNull();
+
+    const reversal = CashMovement.reversal({ id: CashMovementId.from("reversal-mv-adj-1"), original, actorId: user, date, reason: "Entered twice" });
+    await ledger.recordMovement(reversal);
+    await expect(ledger.recordMovement(reversal)).rejects.toMatchObject({ code: "DUPLICATE_OPERATION" });
+    const stored = await movements.byId(reversal.id);
+    expect(stored?.reversesId?.value).toBe("mv-adj-1");
+    expect(stored?.amount.amount).toBe(250_000);
+  });
+
+  it("round-trips the receipt link of an expense", async () => {
+    const expense = Expense.create({
+      companyId, submittedBy: user, category: "Software", description: "Subscription",
+      amount: Money.positive(400_000), expenseDate: DateOnly.from("2026-11-20"),
+    });
+    expense.attachReceipt("receipt-1", "https://files.example/receipt-1.png");
+    const expenses = new MongoExpenseRepository();
+    await expenses.save(expense);
+    expect((await expenses.byId(expense.id))?.snapshot()).toMatchObject({ receiptFileId: "receipt-1", receiptUrl: "https://files.example/receipt-1.png" });
+
+    expense.attachReceipt("receipt-2");
+    await expenses.save(expense);
+    expect((await expenses.byId(expense.id))?.receiptUrl).toBeUndefined();
   });
 });

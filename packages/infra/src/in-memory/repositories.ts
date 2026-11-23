@@ -1,6 +1,6 @@
 import { DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
 import type { Company, User, Membership, Party, Invoice, Expense, Scenario, Retainer, Payment, CashMovement, Money } from "@cashpilot/domain";
-import type { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId } from "@cashpilot/domain";
+import type { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId, CashMovementId } from "@cashpilot/domain";
 import type {
   CompanyRepository, UserRepository, MembershipRepository, PartyRepository, InvoiceRepository, PaymentRepository,
   ExpenseRepository, CashMovementRepository, ScenarioRepository, RetainerRepository, AuditLogRepository, AuditLogEntry,
@@ -92,6 +92,7 @@ export class InMemoryExpenseRepository implements ExpenseRepository {
 
 export class InMemoryCashMovementRepository implements CashMovementRepository {
   readonly store = new DocStore<CashMovementDoc>();
+  async byId(id: CashMovementId) { const doc = this.store.get(id.value); return doc ? cashMovementMapper.toDomain(doc) : null; }
   async byCompany(companyId: CompanyId) {
     return this.store.filter((doc) => doc.companyId === companyId.value)
       .sort((a, b) => a.movementDate.localeCompare(b.movementDate))
