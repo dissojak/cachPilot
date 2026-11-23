@@ -74,7 +74,9 @@ export class Retainer {
   }
 
   update(changes: Partial<RetainerTerms>) {
-    const next = { ...this.props, ...changes };
+    // a field that is not given keeps its value (an explicit `undefined` must not erase it)
+    const given = Object.fromEntries(Object.entries(changes).filter(([, value]) => value !== undefined)) as Partial<RetainerTerms>;
+    const next = { ...this.props, ...given };
     Retainer.assertTerms(next);
     this.props = { ...next, name: next.name.trim() };
   }
