@@ -7,11 +7,14 @@ export type AuditAction =
   | "payment.recorded"
   | "expense.approved"
   | "expense.refused"
+  | "expense.updated"
   | "expense.paid"
   | "cash.opening_set"
   | "cash.adjusted"
+  | "cash.reversed"
   | "member.invited"
   | "member.role_changed"
+  | "retainer.updated"
   | "member.removed";
 
 export interface AuditLogEntry {

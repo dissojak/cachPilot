@@ -16,7 +16,8 @@ export interface InvoiceDoc {
 export interface PaymentDoc { _id: string; companyId: string; invoiceId: string; amountMillimes: number; paymentDate: string; method: string; note?: string; recordedBy: string }
 export interface ExpenseDoc {
   _id: string; companyId: string; submittedBy: string; category: string; description: string; amountMillimes: number;
-  expenseDate: string; receiptFileId?: string; status: "submitted" | "approved" | "refused" | "paid";
+  expenseDate: string; receiptFileId?: string; receiptUrl?: string;
+  status: "submitted" | "approved" | "refused" | "paid";
   approval?: { approver?: string; decisionDate?: string; reason?: string };
   payment?: { paidBy?: string; paidDate?: string };
 }
