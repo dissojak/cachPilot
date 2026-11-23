@@ -116,17 +116,32 @@ export class CashMovement {
     });
   }
 
-  /** BR-19 branch of a correction: reverts an existing movement, with a reason. */
+  /**
+   * BR-19 branch of a correction: reverts a manual adjustment, with a reason.
+   * - Payments are not reversed here: a cash-only reversal would leave the
+   *   invoice or the expense marked as paid while the cash says otherwise.
+   * - The opening balance is corrected with an adjustment, and a reversal
+   *   cannot itself be reversed.
+   * - A movement is reversed at most once (`alreadyReversed` comes from the
+   *   use case, which can see the other movements of the company).
+   */
   static reversal(input: {
     id: CashMovementId;
     original: CashMovement;
     actorId: UserId;
     date: DateOnly;
     reason: string;
+    alreadyReversed?: boolean;
   }) {
     const reason = input.reason.trim();
     if (reason.length === 0) {
       throw new DomainError(DOMAIN_ERROR_CODES.INVALID_INPUT, "A reversal needs a reason");
+    }
+    if (input.original.type !== "adjustment") {
+      throw new DomainError(DOMAIN_ERROR_CODES.MOVEMENT_NOT_REVERSIBLE, "Only a manual adjustment can be reversed");
+    }
+    if (input.alreadyReversed) {
+      throw new DomainError(DOMAIN_ERROR_CODES.MOVEMENT_ALREADY_REVERSED, "This movement was already reversed");
     }
     return new CashMovement(input.id, {
       companyId: input.original.companyId,
