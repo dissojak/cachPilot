@@ -42,7 +42,9 @@ export class AttachReceipt {
       content: input.content,
       contentType: input.contentType,
     });
-    expense.attachReceipt(file.id);
+    // Only a real https link is stored: a data: URL (in-memory storage) can weigh several MB
+    // and would be loaded with every expense list and forecast.
+    expense.attachReceipt(file.id, file.url.startsWith("https://") ? file.url : undefined);
     await this.expenses.save(expense);
     return expense.snapshot();
   }

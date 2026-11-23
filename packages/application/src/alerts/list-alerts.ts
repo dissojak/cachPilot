@@ -1,5 +1,5 @@
 import { CompanyId, AlertEvaluator, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
-import type { Alert } from "@cashpilot/domain";
+import type { Alert, AlertType } from "@cashpilot/domain";
 import type { CompanyRepository } from "../ports/company-repository";
 import type { MembershipRepository } from "../ports/membership-repository";
 import type { Clock } from "../ports/clock";
@@ -7,7 +7,7 @@ import { authorize } from "../access/authorize";
 import { seriesOf } from "../forecast/forecast-context";
 import type { ForecastContextLoader } from "../forecast/forecast-context";
 
-export interface ListAlertsInput { userId: string; companyId: string; }
+export interface ListAlertsInput { userId: string; companyId: string; type?: AlertType; }
 
 /** M10 / BR-28: overdue invoices, expenses to approve, negative or low forecast. */
 export class ListAlerts {
@@ -24,12 +24,13 @@ export class ListAlerts {
     if (!company) throw new DomainError(DOMAIN_ERROR_CODES.COMPANY_NOT_FOUND, "Company not found");
     const today = this.clock.today();
     const context = await this.loader.load(input.companyId, today);
-    return new AlertEvaluator().evaluate({
+    const alerts = new AlertEvaluator().evaluate({
       today,
       invoices: context.invoices,
       expenses: context.expenses,
       series: seriesOf(context.inputs),
       threshold: company.forecastThreshold,
     });
+    return input.type ? alerts.filter((alert) => alert.type === input.type) : alerts;
   }
 }

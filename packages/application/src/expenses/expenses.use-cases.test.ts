@@ -55,3 +55,29 @@ describe("expense approval workflow", () => {
     expect(world.repos.audit.items.at(-1)).toMatchObject({ action: "expense.approved", actorId: company.owner.userId });
   });
 });
+
+describe("expense edits and receipt link", () => {
+  it("the submitter edits a submitted expense; a decision freezes it", async () => {
+    const { world, company, expenseId } = await setup();
+    const updated = await world.useCases.updateSubmittedExpense.execute({ ...company.collaborator, expenseId, description: "Annual subscription", amountMillimes: 480_000 });
+    expect(updated).toMatchObject({ description: "Annual subscription", amountMillimes: 480_000, status: "submitted" });
+    await world.useCases.approveExpense.execute({ ...company.owner, expenseId });
+    await expect(world.useCases.updateSubmittedExpense.execute({ ...company.collaborator, expenseId, amountMillimes: 1_000 }))
+      .rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+  });
+
+  it("a collaborator cannot edit someone else's expense, finance can", async () => {
+    const { world, company, expenseId } = await setup();
+    const other = await world.useCases.submitExpense.execute({ ...company.finance, category: "Travel", description: "Train", amountMillimes: 50_000, expenseDate: "2026-11-20" });
+    await expect(world.useCases.updateSubmittedExpense.execute({ ...company.collaborator, expenseId: other.id, amountMillimes: 1_000 }))
+      .rejects.toMatchObject({ code: "ACCESS_DENIED" });
+    expect((await world.useCases.updateSubmittedExpense.execute({ ...company.finance, expenseId, category: "Tools" })).category).toBe("Tools");
+  });
+
+  it("attaching a receipt keeps the link to open it, which the owner can read", async () => {
+    const { world, company, expenseId } = await setup();
+    await world.useCases.attachReceipt.execute({ ...company.collaborator, expenseId, fileName: "r.png", content: new Uint8Array([1, 2, 3]), contentType: "image/png" });
+    const seen = await world.useCases.getExpense.execute({ ...company.owner, expenseId });
+    expect(seen).toMatchObject({ receiptFileId: "file-1", receiptUrl: "https://files.test/file-1.png" });
+  });
+});
