@@ -14,6 +14,8 @@ export default async function CashPage() {
   const today = new Date().toISOString().slice(0, 10);
   const hasOpening = movements.some((movement) => movement.type === "opening");
   const rows = [...movements].reverse();
+  // an adjustment that already has a reversal is not offered again (the server also refuses it)
+  const reversed = new Set(movements.map((movement) => movement.reversesId).filter(Boolean));
 
   return (
     <main className="shell">
@@ -39,7 +41,7 @@ export default async function CashPage() {
                         <td className="muted">{movement.reason ?? movement.sourceType}</td>
                         <td className={`num ${movement.amountMillimes < 0 ? "amount-out" : "amount-in"}`}>{money(movement.amountMillimes)}</td>
                         <td>
-                          {can(actor, "cash.adjust") && movement.type === "adjustment" && (
+                          {can(actor, "cash.adjust") && movement.type === "adjustment" && !reversed.has(movement.id) && (
                             <details className="reverse">
                               <summary>Reverse</summary>
                               <ActionForm action={reverseMovementAction} className="form reverse-form">
