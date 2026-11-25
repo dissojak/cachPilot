@@ -363,13 +363,10 @@ body {
 .alert-item.accent-muted { border-left-color: var(--sage-200); }
 
 /* ---------- tables used as lists ---------- */
-.table-link:hover td { background: rgba(255, 255, 255, 0.55); }
-.table td:first-child { border-top-left-radius: 0; }
 .table-main { color: var(--forest-900); font-weight: 600; text-decoration: none; }
 .table-main:hover { color: var(--pine-600); text-decoration: underline; }
 .chip-row { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .actions-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.list-tight { gap: 8px; }
 .member-row { display: grid; gap: 8px; }
 
 /* ---------- navigation sidebar and drawer ---------- */

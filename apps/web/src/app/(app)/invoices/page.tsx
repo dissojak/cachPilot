@@ -68,7 +68,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
                 </thead>
                 <tbody>
                   {invoices.map((invoice) => (
-                    <tr key={invoice.id} className="table-link">
+                    <tr key={invoice.id}>
                       <td><Link href={`/invoices/${invoice.id}`} className="table-main">{invoice.number}</Link></td>
                       <td className="muted">{names.get(invoice.customerId) ?? "Unknown customer"}</td>
                       <td className={invoice.overdue ? "amount-out" : undefined}>{date(invoice.dueDate)}</td>
