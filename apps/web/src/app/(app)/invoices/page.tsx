@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeader, StatusChip, EmptyState } from "@cashpilot/ui";
+import { PageHeader, Card, StatusChip, EmptyState } from "@cashpilot/ui";
 import type { InvoiceFilter } from "@cashpilot/application";
 import { useCases } from "@/container";
 import { requirePermission, can } from "@/lib/session";
@@ -24,38 +24,69 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
     useCases.listParties.execute(actor),
   ]);
   const names = new Map(parties.map((party) => [party.id, party.name]));
+  const canManage = can(actor, "invoices.manage");
 
   return (
     <main className="shell">
-      <PageHeader eyebrow="Invoices" title="Receivables" actions={can(actor, "invoices.manage") && <Link href="/invoices/new" className="btn">+ New invoice</Link>} />
+      <PageHeader
+        title="Invoices"
+        description="Money you are owed. Each invoice shows what is still to be paid and when."
+        actions={canManage && <Link href="/invoices/new" className="btn">New invoice</Link>}
+      />
       <nav className="filters" aria-label="Filter invoices">
-        {filters.map((item) => (
-          <Link key={item.label} href={item.value ? `/invoices?filter=${item.value}` : "/invoices"} className={`filter ${item.value === active ? "active" : ""}`} aria-current={item.value === active ? "page" : undefined}>
-            {item.label}
-          </Link>
-        ))}
+        {filters.map((item) => {
+          const current = item.value === active;
+          return (
+            <Link key={item.label} href={item.value ? `/invoices?filter=${item.value}` : "/invoices"} className={`filter${current ? " active" : ""}`} aria-current={current ? "page" : undefined}>
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
 
-      {invoices.length === 0 ? (
-        <section className="glass">
-          <EmptyState title="No invoice here" text={active ? "No invoice matches this filter." : "Create your first invoice to see expected receipts in the forecast."}
-            action={can(actor, "invoices.manage") && !active ? <Link href="/invoices/new" className="btn">Create an invoice</Link> : undefined} />
-        </section>
-      ) : (
-        <div className="list">
-          {invoices.map((invoice) => (
-            <Link key={invoice.id} href={`/invoices/${invoice.id}`} className="glass lift row">
-              <div><strong>{invoice.number}</strong><small>{names.get(invoice.customerId) ?? "Unknown customer"}</small></div>
-              <div><small>Total</small><strong>{money(invoice.totalMillimes)}</strong></div>
-              <div><small>Remaining · due {date(invoice.dueDate)}</small><strong>{money(invoice.remainingMillimes)}</strong></div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                {invoice.overdue && <StatusChip status="overdue" label="Overdue" />}
-                <StatusChip status={invoice.status} label={statusLabel[invoice.status] ?? invoice.status} />
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      <Card>
+        {invoices.length === 0
+          ? (
+            <EmptyState
+              title="No invoice here"
+              text={active ? "No invoice matches this filter." : "Create your first invoice to see expected receipts in the forecast."}
+              action={canManage && !active ? <Link href="/invoices/new" className="btn">Create an invoice</Link> : undefined}
+            />
+          )
+          : (
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Customer</th>
+                    <th>Due</th>
+                    <th className="num">Total</th>
+                    <th className="num">Still to pay</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((invoice) => (
+                    <tr key={invoice.id} className="table-link">
+                      <td><Link href={`/invoices/${invoice.id}`} className="table-main">{invoice.number}</Link></td>
+                      <td className="muted">{names.get(invoice.customerId) ?? "Unknown customer"}</td>
+                      <td className={invoice.overdue ? "amount-out" : undefined}>{date(invoice.dueDate)}</td>
+                      <td className="num">{money(invoice.totalMillimes)}</td>
+                      <td className="num">{money(invoice.remainingMillimes)}</td>
+                      <td>
+                        <span className="chip-row">
+                          {invoice.overdue && <StatusChip status="overdue" label="Overdue" />}
+                          <StatusChip status={invoice.status} label={statusLabel[invoice.status] ?? invoice.status} />
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+      </Card>
     </main>
   );
 }
