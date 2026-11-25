@@ -17,7 +17,7 @@ export default async function RetainersPage() {
 
   return (
     <main className="shell">
-      <PageHeader eyebrow="Agency feature" title="Recurring retainers"
+      <PageHeader title="Recurring retainers"
         description="A retainer bills a customer every N days. Due periods become validated invoices, so the forecast sees recurring revenue."
         actions={retainers.length > 0 && (
           <ActionForm action={generateRetainerInvoicesAction} className="inline-form">
@@ -29,8 +29,8 @@ export default async function RetainersPage() {
           {retainers.length === 0 ? <EmptyState title="No retainer" text="Create a retainer for a customer you bill every month." /> : (
             <div className="list">
               {retainers.map((retainer) => (
-                <div key={retainer.id} className="alert-item" style={{ borderLeftColor: retainer.status === "active" ? "var(--pine-600)" : "var(--sage-200)", display: "grid", gap: 6 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <div key={retainer.id} className={`alert-item member-row ${retainer.status === "active" ? "accent-pine" : "accent-muted"}`}>
+                  <div className="row-between">
                     <strong>{retainer.name}</strong>
                     <StatusChip status={retainer.status} label={statusLabel[retainer.status] ?? retainer.status} />
                   </div>

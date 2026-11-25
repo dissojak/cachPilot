@@ -23,13 +23,13 @@ export default async function MembersPage() {
         <Card title={`${members.length} member${members.length === 1 ? "" : "s"}`}>
           <div className="list">
             {members.map((member) => (
-              <div key={member.userId} className="alert-item" style={{ borderLeftColor: "var(--pine-600)", display: "grid", gap: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+              <div key={member.userId} className="alert-item accent-pine member-row">
+                <div className="row-between">
                   <div><strong>{member.name}{member.userId === actor.userId ? " (you)" : ""}</strong><small className="muted">{member.email}</small></div>
                   <StatusChip status={member.role === "owner" ? "active" : member.role === "finance_manager" ? "validated" : "draft"} label={roleLabel[member.role] ?? member.role} />
                 </div>
                 {manage && (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
+                  <div className="actions-row">
                     <ActionForm action={changeMemberRoleAction} className="form-row">
                       <input type="hidden" name="memberUserId" value={member.userId} />
                       <SelectField label="Role" name="role" defaultValue={member.role} options={roles.map((role) => ({ value: role.value, label: roleLabel[role.value] ?? role.value }))} />

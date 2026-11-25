@@ -19,7 +19,7 @@ export default async function PartiesPage() {
             : (
               <div className="list">
                 {parties.map((party) => (
-                  <Link key={party.id} href={`/parties/${party.id}`} className="alert-item" style={{ borderLeftColor: party.type === "customer" ? "var(--pine-600)" : "var(--lake)" }}>
+                  <Link key={party.id} href={`/parties/${party.id}`} className={`alert-item ${party.type === "customer" ? "accent-pine" : "accent-lake"}`}>
                     <strong>{party.name}</strong>
                     <small className="muted">{[party.email, party.phone].filter(Boolean).join(" · ") || "No contact details"}</small>{" "}
                     <StatusChip status={party.type === "customer" ? "active" : "draft"} label={party.type === "customer" ? "Customer" : "Supplier"} />
