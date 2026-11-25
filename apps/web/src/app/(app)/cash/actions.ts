@@ -29,6 +29,16 @@ export async function setOpeningBalanceAction(_: ActionResult | null, formData: 
   });
 }
 
+export async function reverseMovementAction(_: ActionResult | null, formData: FormData) {
+  const actor = await requireActor();
+  const schema = z.object({ movementId: fields.id, reason: fields.text });
+  return runAction(schema, formData, async (input) => {
+    await useCases.reverseMovement.execute({ userId: actor.userId, companyId: actor.companyId, movementId: input.movementId, reason: input.reason });
+    refresh();
+    return "Movement reversed with a new, linked entry.";
+  });
+}
+
 export async function recordAdjustmentAction(_: ActionResult | null, formData: FormData) {
   const actor = await requireActor();
   const schema = z.object({ amount: fields.signedAmount, movementDate: fields.date, reason: fields.text });

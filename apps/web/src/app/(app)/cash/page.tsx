@@ -3,7 +3,7 @@ import { useCases } from "@/container";
 import { requirePermission, can } from "@/lib/session";
 import { money, date, movementLabel } from "@/lib/format";
 import { ActionForm, Field, SubmitButton } from "@/components/form";
-import { setOpeningBalanceAction, recordAdjustmentAction } from "./actions";
+import { setOpeningBalanceAction, recordAdjustmentAction, reverseMovementAction } from "./actions";
 
 export default async function CashPage() {
   const actor = await requirePermission("cash.view");
@@ -30,7 +30,7 @@ export default async function CashPage() {
             : (
               <div className="table-wrap">
                 <table className="table">
-                  <thead><tr><th>Date</th><th>Type</th><th>Reason / source</th><th className="num">Amount</th></tr></thead>
+                  <thead><tr><th>Date</th><th>Type</th><th>Reason / source</th><th className="num">Amount</th><th><span className="sr-only">Actions</span></th></tr></thead>
                   <tbody>
                     {rows.map((movement) => (
                       <tr key={movement.id}>
@@ -38,6 +38,18 @@ export default async function CashPage() {
                         <td>{movementLabel[movement.type] ?? movement.type}</td>
                         <td className="muted">{movement.reason ?? movement.sourceType}</td>
                         <td className={`num ${movement.amountMillimes < 0 ? "amount-out" : "amount-in"}`}>{money(movement.amountMillimes)}</td>
+                        <td>
+                          {can(actor, "cash.adjust") && movement.type === "adjustment" && (
+                            <details className="reverse">
+                              <summary>Reverse</summary>
+                              <ActionForm action={reverseMovementAction} className="form reverse-form">
+                                <input type="hidden" name="movementId" value={movement.id} />
+                                <Field id={`reason-${movement.id}`} label="Reason for reversing" name="reason" required />
+                                <SubmitButton variant="danger" small>Reverse this adjustment</SubmitButton>
+                              </ActionForm>
+                            </details>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
