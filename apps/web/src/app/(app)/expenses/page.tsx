@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeader, StatusChip, EmptyState } from "@cashpilot/ui";
+import { PageHeader, Card, StatusChip, EmptyState } from "@cashpilot/ui";
 import type { ExpenseStatus } from "@cashpilot/application";
 import { useCases } from "@/container";
 import { requirePermission, can } from "@/lib/session";
@@ -19,28 +19,52 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
 
   return (
     <main className="shell">
-      <PageHeader eyebrow="Expenses" title={all ? "Company expenses" : "My expense requests"}
-        description="Submitted → approved or refused by the owner → paid by the finance manager."
-        actions={<Link href="/expenses/new" className="btn">+ Submit expense</Link>} />
+      <PageHeader
+        title={all ? "Company expenses" : "My expense requests"}
+        description="Submitted, then approved or refused by an owner, then paid by the finance manager."
+        actions={<Link href="/expenses/new" className="btn">Submit expense</Link>}
+      />
       <nav className="filters" aria-label="Filter expenses">
-        {filters.map((item) => (
-          <Link key={item.label} href={item.value ? `/expenses?status=${item.value}` : "/expenses"} className={`filter ${item.value === active ? "active" : ""}`}>{item.label}</Link>
-        ))}
-      </nav>
-      {expenses.length === 0 ? (
-        <section className="glass"><EmptyState title="No expense here" text="Submitted expenses and their decisions appear in this list." action={<Link href="/expenses/new" className="btn">Submit an expense</Link>} /></section>
-      ) : (
-        <div className="list">
-          {expenses.map((expense) => (
-            <Link key={expense.id} href={`/expenses/${expense.id}`} className="glass lift row">
-              <div><strong>{expense.description}</strong><small>{expense.category}</small></div>
-              <div><small>Amount</small><strong>{money(expense.amountMillimes)}</strong></div>
-              <div><small>Date</small><strong>{date(expense.expenseDate)}</strong></div>
-              <StatusChip status={expense.status} label={statusLabel[expense.status] ?? expense.status} />
+        {filters.map((item) => {
+          const current = item.value === active;
+          return (
+            <Link key={item.label} href={item.value ? `/expenses?status=${item.value}` : "/expenses"} className={`filter${current ? " active" : ""}`} aria-current={current ? "page" : undefined}>
+              {item.label}
             </Link>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </nav>
+
+      <Card>
+        {expenses.length === 0
+          ? (
+            <EmptyState
+              title="No expense here"
+              text="Submitted expenses and their decisions appear in this list."
+              action={<Link href="/expenses/new" className="btn">Submit an expense</Link>}
+            />
+          )
+          : (
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr><th>Description</th><th>Category</th><th>Date</th><th className="num">Amount</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  {expenses.map((expense) => (
+                    <tr key={expense.id}>
+                      <td><Link href={`/expenses/${expense.id}`} className="table-main">{expense.description}</Link></td>
+                      <td className="muted">{expense.category}</td>
+                      <td>{date(expense.expenseDate)}</td>
+                      <td className="num">{money(expense.amountMillimes)}</td>
+                      <td><StatusChip status={expense.status} label={statusLabel[expense.status] ?? expense.status} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+      </Card>
     </main>
   );
 }
