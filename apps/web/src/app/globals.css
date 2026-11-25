@@ -32,12 +32,13 @@ body {
   padding: 32px 24px 64px;
 }
 
+/* surface hierarchy: panels 24px, nested tiles 16px, controls 12–14px */
 .glass {
-  background: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(24px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.62);
-  border-radius: 28px;
-  box-shadow: 0 20px 60px -20px rgba(11, 31, 23, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  box-shadow: 0 12px 40px -24px rgba(11, 31, 23, 0.28);
 }
 
 .ghost {
@@ -64,12 +65,12 @@ body {
   color: var(--forest-900);
 }
 
+/* small label above a value or heading: sentence case, one typeface (Inter) */
 .mono {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-secondary);
+  margin: 0;
 }
 
 @media (max-width: 768px) {
@@ -148,12 +149,10 @@ body {
 }
 
 .nav-section-title {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  margin: 14px 12px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin: 18px 12px 6px;
 }
 
 .nav-avatar {
@@ -291,7 +290,7 @@ body {
 .row strong { display: block; }
 .row small { color: var(--text-secondary); font-size: 13px; }
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.table th { text-align: left; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); font-weight: 500; padding: 0 10px 10px; }
+.table th { text-align: left; font-size: 13px; color: var(--text-secondary); font-weight: 600; padding: 0 10px 10px; }
 .table td { padding: 12px 10px; border-top: 1px solid rgba(207, 224, 204, 0.7); }
 .table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .table-wrap { overflow-x: auto; }
