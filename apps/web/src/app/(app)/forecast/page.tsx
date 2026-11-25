@@ -27,15 +27,15 @@ export default async function ForecastPage() {
       <Card title="Daily balance, next 90 days">
         <ForecastChart base={forecast.series} label="Daily forecast balance" />
         {forecast.shortageWindows.length === 0
-          ? <p className="muted" style={{ marginTop: 12 }}>The balance stays positive for the next 90 days.</p>
+          ? <p className="notice notice-ok">The balance stays positive for the next 90 days.</p>
           : forecast.shortageWindows.map((window) => (
-            <p key={window.start} className="field-error" style={{ marginTop: 12 }}>
+            <p key={window.start} className="notice notice-danger">
               Shortage from {date(window.start)} to {date(window.end)}: lowest {money(window.minimumMillimes)} on {date(window.minimumDate)}.
             </p>
           ))}
       </Card>
 
-      <div className="grid-2" style={{ marginTop: 20 }}>
+      <div className="grid-2 mt-24">
         <Card title="Expected receipts">
           {forecast.receipts.length === 0
             ? <EmptyState title="Nothing expected" text="Validated invoices with an unpaid amount appear here at their due date." />

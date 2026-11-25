@@ -22,13 +22,13 @@ export default async function ScenarioPage({ params }: { params: Promise<{ id: s
       <Card title="Base vs simulated">
         <ForecastChart base={result.base.series} simulated={result.simulated.series} label="Base and simulated forecast" />
         {result.simulated.shortageWindows.length === 0
-          ? <p className="muted" style={{ marginTop: 12 }}>No cash shortage with these hypotheses.</p>
+          ? <p className="notice notice-ok">No cash shortage with these hypotheses.</p>
           : result.simulated.shortageWindows.map((window) => (
-            <p key={window.start} className="field-error" style={{ marginTop: 12 }}>
+            <p key={window.start} className="notice notice-danger">
               Shortage {date(window.start)} → {date(window.end)}: lowest {money(window.minimumMillimes)} on {date(window.minimumDate)}.
             </p>
           ))}
-        <div className="table-wrap" style={{ marginTop: 16 }}>
+        <div className="table-wrap mt-16">
           <table className="table">
             <thead><tr><th>Date</th><th className="num">Base</th><th className="num">Simulated</th><th className="num">Difference</th></tr></thead>
             <tbody>{result.comparison.map((row) => (
@@ -43,14 +43,14 @@ export default async function ScenarioPage({ params }: { params: Promise<{ id: s
         </div>
       </Card>
 
-      <div className="grid-2" style={{ marginTop: 20 }}>
+      <div className="grid-2 mt-24">
         <Card title="Hypotheses">
           {result.hypotheses.length === 0
             ? <EmptyState title="No hypothesis" text="Without hypotheses the two lines are identical." />
             : (
               <div className="list">
                 {result.hypotheses.map((hypothesis, index) => (
-                  <div key={index} className="alert-item" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                  <div key={index} className="alert-item row-between">
                     <span>
                       {hypothesis.amountMillimes !== undefined && hypothesis.date !== undefined
                         ? `${hypothesis.type === "new_expense" ? "New expense" : "Extra income"} “${hypothesis.label}”: ${money(hypothesis.amountMillimes)} on ${date(hypothesis.date)}`

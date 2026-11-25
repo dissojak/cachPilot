@@ -358,3 +358,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .progress span, .skeleton { animation: none; }
 }
+.alert-item.accent-pine { border-left-color: var(--pine-600); }
+.alert-item.accent-lake { border-left-color: var(--lake); }
+.alert-item.accent-muted { border-left-color: var(--sage-200); }

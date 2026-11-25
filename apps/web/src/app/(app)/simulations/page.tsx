@@ -21,7 +21,7 @@ export default async function SimulationsPage() {
             : (
               <div className="list">
                 {scenarios.map((scenario) => (
-                  <Link key={scenario.id} href={`/simulations/${scenario.id}`} className="alert-item" style={{ borderLeftColor: "var(--lake)" }}>
+                  <Link key={scenario.id} href={`/simulations/${scenario.id}`} className="alert-item accent-lake">
                     <strong>{scenario.name}</strong>
                     <small className="muted">From {date(scenario.baseReferenceDate)} · {scenario.hypotheses.length} hypothes{scenario.hypotheses.length === 1 ? "is" : "es"}</small>
                   </Link>
