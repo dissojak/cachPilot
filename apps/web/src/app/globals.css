@@ -21,7 +21,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: Inter, -apple-system, "SF Pro Text", system-ui, sans-serif;
+  font-family: var(--font-inter), -apple-system, "SF Pro Text", system-ui, sans-serif;
   color: var(--forest-900);
   background: radial-gradient(circle at 20% 0%, rgba(127, 183, 126, 0.18), transparent 32%), linear-gradient(180deg, var(--fog-50), var(--mist-100));
 }
@@ -46,7 +46,7 @@ body {
   inset: 0;
   display: grid;
   place-items: center;
-  font-family: Outfit, system-ui, sans-serif;
+  font-family: var(--font-outfit), system-ui, sans-serif;
   font-size: 18vw;
   font-weight: 600;
   letter-spacing: -0.05em;
@@ -57,7 +57,7 @@ body {
 }
 
 .hero-amount {
-  font-family: Outfit, system-ui, sans-serif;
+  font-family: var(--font-outfit), system-ui, sans-serif;
   font-size: 72px;
   line-height: 72px;
   font-weight: 600;
@@ -238,18 +238,18 @@ body {
 /* ---------- shared components (packages/ui + apps/web/components) ---------- */
 .muted { color: var(--text-secondary); }
 .page-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; }
-.page-title { font-family: Outfit, system-ui, sans-serif; font-size: 40px; line-height: 44px; margin: 8px 0 0; letter-spacing: -0.02em; }
+.page-title { font-family: var(--font-outfit), system-ui, sans-serif; font-size: 40px; line-height: 44px; margin: 8px 0 0; letter-spacing: -0.02em; }
 .page-description { margin: 8px 0 0; max-width: 640px; }
 .page-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .card { padding: 28px; }
 .card + .card { margin-top: 20px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
-.card-title { font-family: Outfit, system-ui, sans-serif; font-size: 20px; margin: 0; }
+.card-title { font-family: var(--font-outfit), system-ui, sans-serif; font-size: 20px; margin: 0; }
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; align-items: start; }
 .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px; }
 .stack { display: grid; gap: 20px; }
 .stat { padding: 24px; }
-.stat-value { font-family: Outfit, system-ui, sans-serif; font-size: 28px; line-height: 32px; font-weight: 600; margin-top: 10px; }
+.stat-value { font-family: var(--font-outfit), system-ui, sans-serif; font-size: 28px; line-height: 32px; font-weight: 600; margin-top: 10px; }
 .stat-danger { color: var(--clay); }
 .stat-success { color: var(--moss-500); }
 .stat-note { margin: 8px 0 0; font-size: 13px; }
@@ -322,7 +322,7 @@ body {
 /* ---------- auth + full-width helpers ---------- */
 .auth-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
 .auth-card { width: 100%; max-width: 420px; padding: 40px; text-align: center; }
-.auth-title { font-family: Outfit, system-ui, sans-serif; font-size: 36px; line-height: 40px; font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 12px; }
+.auth-title { font-family: var(--font-outfit), system-ui, sans-serif; font-size: 36px; line-height: 40px; font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 12px; }
 .auth-copy { margin: 0 0 32px; line-height: 1.55; }
 .auth-fine { margin: 20px 0 0; }
 .btn-block { display: flex; width: 100%; }
@@ -380,7 +380,7 @@ body {
 .nav-label { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; }
 .nav-brand { display: block; text-decoration: none; margin-bottom: 18px; }
 .nav-brand-row { display: flex; align-items: center; gap: 12px; }
-.nav-brand-name { font-family: Outfit, system-ui, sans-serif; font-weight: 650; font-size: 17px; color: var(--text-primary); }
+.nav-brand-name { font-family: var(--font-outfit), system-ui, sans-serif; font-weight: 650; font-size: 17px; color: var(--text-primary); }
 .nav-avatar-lg { width: 42px; height: 42px; border-radius: 16px; }
 .nav-avatar { flex-shrink: 0; }
 .nav-footer { margin-top: auto; padding-top: 16px; }
