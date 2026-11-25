@@ -154,6 +154,32 @@ describe("CashMovement.intent factories", () => {
     }), "INVALID_INPUT");
   });
 
+  it("reverses an adjustment only once", () => {
+    const original = CashMovement.adjustment({
+      id: CashMovementId.next(), companyId, actorId: actor, date,
+      amount: Money.of(300000), reason: "Bank fee",
+    });
+    const reverse = (alreadyReversed: boolean) => CashMovement.reversal({
+      id: CashMovementId.next(), original, actorId: actor, date, reason: "Entered twice", alreadyReversed,
+    });
+    expect(reverse(false).type).toBe("reversal");
+    expectDomainError(() => reverse(true), "MOVEMENT_ALREADY_REVERSED");
+  });
+
+  it("does not reverse payments, the opening balance or another reversal", () => {
+    const reverse = (original: CashMovement) => () => CashMovement.reversal({
+      id: CashMovementId.next(), original, actorId: actor, date, reason: "Mistake",
+    });
+    const opening = CashMovement.opening({ id: CashMovementId.next(), companyId, actorId: actor, date, amount: Money.of(5000000) });
+    const invoicePayment = CashMovement.fromInvoicePayment({ id: CashMovementId.next(), payment: createPayment() });
+    const expensePayment = CashMovement.fromExpensePayment({ id: CashMovementId.next(), expense: createPaidExpense() });
+    const adjustment = CashMovement.adjustment({ id: CashMovementId.next(), companyId, actorId: actor, date, amount: Money.of(100), reason: "Fix" });
+    const reversal = reverse(adjustment)();
+    for (const original of [opening, invoicePayment, expensePayment, reversal]) {
+      expectDomainError(reverse(original), "MOVEMENT_NOT_REVERSIBLE");
+    }
+  });
+
   it("snapshots every field as primitives", () => {
     const movement = CashMovement.fromInvoicePayment({ id: CashMovementId.next(), payment: createPayment() });
     const snapshot = movement.snapshot();

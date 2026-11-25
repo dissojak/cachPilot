@@ -4,7 +4,7 @@ import {
   CreateInvoiceDraft, UpdateInvoiceDraft, ValidateInvoice, CancelInvoice, GetInvoice, ListInvoices,
   RecordPayment, ListPaymentsForInvoice, ExportInvoicePdf,
   SubmitExpense, AttachReceipt, UpdateSubmittedExpense, ListExpenses, GetExpense, ApproveExpense, RefuseExpense, MarkExpensePaid,
-  SetOpeningBalance, RecordAdjustment, ListCashMovements, GetRealBalance,
+  SetOpeningBalance, RecordAdjustment, ReverseMovement, ListCashMovements, GetRealBalance, ListAuditLog,
   ForecastContextLoader, GetForecast, ListAlerts, GetDashboard,
   CreateScenario, AddHypothesis, RemoveHypothesis, RunSimulation, CompareScenarios, ListScenarios, GetScenario,
   CreateRetainer, UpdateRetainer, PauseRetainer, ResumeRetainer, GenerateRetainerInvoices, ListRetainers,
@@ -54,7 +54,7 @@ export const useCases = {
 
   submitExpense: new SubmitExpense(a.expenses, a.memberships),
   attachReceipt: new AttachReceipt(a.expenses, a.memberships, a.fileStorage),
-  updateSubmittedExpense: new UpdateSubmittedExpense(a.expenses, a.memberships),
+  updateSubmittedExpense: new UpdateSubmittedExpense(a.expenses, a.memberships, a.audit, a.clock),
   listExpenses: new ListExpenses(a.expenses, a.memberships),
   getExpense: new GetExpense(a.expenses, a.memberships),
   approveExpense: new ApproveExpense(a.expenses, a.memberships, a.audit, a.clock),
@@ -63,6 +63,8 @@ export const useCases = {
 
   setOpeningBalance: new SetOpeningBalance(a.movements, a.ledger, a.memberships, a.audit, a.ids, a.clock),
   recordAdjustment: new RecordAdjustment(a.ledger, a.memberships, a.audit, a.ids, a.clock),
+  reverseMovement: new ReverseMovement(a.movements, a.ledger, a.memberships, a.audit, a.clock),
+  listAuditLog: new ListAuditLog(a.audit, a.users, a.memberships),
   listCashMovements: new ListCashMovements(a.movements, a.memberships),
   getRealBalance: new GetRealBalance(a.companies, a.movements, a.memberships, a.clock),
 
@@ -79,7 +81,7 @@ export const useCases = {
   getScenario: new GetScenario(a.scenarios, a.memberships),
 
   createRetainer: new CreateRetainer(a.retainers, a.parties, a.memberships),
-  updateRetainer: new UpdateRetainer(a.retainers, a.memberships),
+  updateRetainer: new UpdateRetainer(a.retainers, a.memberships, a.audit, a.clock),
   pauseRetainer: new PauseRetainer(a.retainers, a.memberships),
   resumeRetainer: new ResumeRetainer(a.retainers, a.memberships),
   generateRetainerInvoices: new GenerateRetainerInvoices(a.retainers, a.invoices, a.memberships, a.clock),

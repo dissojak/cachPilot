@@ -39,12 +39,18 @@ export function ActionForm({ action, children, resetOnSuccess = false, className
   );
 }
 
+/** First error of a field, for custom controls that are not built with <Field>. */
+export function useFieldError(name: string) {
+  return useContext(FieldErrors)[name]?.[0];
+}
+
 type FieldProps = { label: string; name: string; hint?: string } & InputHTMLAttributes<HTMLInputElement>;
 
 /** Label + input + error, linked for screen readers. */
-export function Field({ label, name, hint, ...input }: FieldProps) {
+export function Field({ label, name, hint, id: givenId, ...input }: FieldProps) {
   const error = useContext(FieldErrors)[name]?.[0];
-  const id = `field-${name}`;
+  // pass `id` when the same form is repeated on a page (one per row), so ids stay unique
+  const id = givenId ?? `field-${name}`;
   return (
     <div className="field" data-invalid={error ? "true" : undefined}>
       <label htmlFor={id}>{label}</label>

@@ -33,6 +33,9 @@ const messages: Record<DomainErrorCode, string> = {
   LAST_OWNER: "The company must keep at least one owner.",
   OPENING_BALANCE_ALREADY_SET: "The opening balance is already set. Record an adjustment instead.",
   CONCURRENT_UPDATE: "Someone changed this meanwhile. Reload the page and try again.",
+  MOVEMENT_NOT_FOUND: "This cash movement does not exist.",
+  MOVEMENT_ALREADY_REVERSED: "This movement was already reversed.",
+  MOVEMENT_NOT_REVERSIBLE: "Only a manual adjustment can be reversed.",
 };
 
 /** The domain message is more precise for validation errors; the table covers the rest. */

@@ -25,3 +25,20 @@ describe("recurring retainers (original feature)", () => {
     expect((await world.useCases.generateRetainerInvoices.execute(company.finance)).generatedInvoiceIds).toHaveLength(0);
   });
 });
+
+describe("editing a retainer", () => {
+  it("changes the terms, keeps the status, and only finance can do it", async () => {
+    const world = createWorld("2026-11-05");
+    const company = await createCompany(world);
+    const retainer = await world.useCases.createRetainer.execute({
+      ...company.finance, customerId: company.customerId, name: "Hosting", amountMillimes: 200_000, intervalDays: 30, nextGenerationDate: "2026-12-01",
+    });
+    await world.useCases.pauseRetainer.execute({ ...company.finance, retainerId: retainer.id });
+    const updated = await world.useCases.updateRetainer.execute({
+      ...company.finance, retainerId: retainer.id, name: "Hosting + backups", amountMillimes: 260_000, intervalDays: 15, nextGenerationDate: "2026-12-10",
+    });
+    expect(updated).toMatchObject({ name: "Hosting + backups", amountMillimes: 260_000, intervalDays: 15, nextGenerationDate: "2026-12-10", status: "paused" });
+    await expect(world.useCases.updateRetainer.execute({ ...company.finance, retainerId: retainer.id, intervalDays: 0 })).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    await expect(world.useCases.updateRetainer.execute({ ...company.owner, retainerId: retainer.id, name: "x" })).rejects.toMatchObject({ code: "ACCESS_DENIED" });
+  });
+});

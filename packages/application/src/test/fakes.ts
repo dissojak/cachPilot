@@ -1,6 +1,6 @@
 import { DateOnly, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
 import type { Company, User, Membership, Party, Invoice, Payment, Expense, CashMovement, Scenario, Retainer, Money } from "@cashpilot/domain";
-import type { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId } from "@cashpilot/domain";
+import type { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId, CashMovementId } from "@cashpilot/domain";
 import type {
   CompanyRepository,
   UserRepository,
@@ -80,6 +80,7 @@ export class InMemoryExpenseRepository implements ExpenseRepository {
 
 export class InMemoryCashMovementRepository implements CashMovementRepository {
   readonly items: CashMovement[] = [];
+  async byId(id: CashMovementId) { return this.items.find((item) => item.id.equals(id)) ?? null; }
   async byCompany(companyId: CompanyId) { return this.items.filter((item) => item.companyId.equals(companyId)); }
 }
 

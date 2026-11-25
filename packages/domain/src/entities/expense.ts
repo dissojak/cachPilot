@@ -16,6 +16,8 @@ interface ExpenseProps {
   amount: Money;
   expenseDate: DateOnly;
   receiptFileId?: string;
+  /** Where the stored receipt can be opened (https link given by the file storage). */
+  receiptUrl?: string;
   status: ExpenseStatus;
   approval?: { approver: UserId; decisionDate: DateOnly; reason?: string };
   payment?: { paidBy: UserId; paidDate: DateOnly };
@@ -65,6 +67,7 @@ export class Expense {
     amount: Money;
     expenseDate: DateOnly;
     receiptFileId?: string;
+    receiptUrl?: string;
     status: ExpenseStatus;
     approval?: { approver: UserId; decisionDate: DateOnly; reason?: string };
     payment?: { paidBy: UserId; paidDate: DateOnly; amount?: Money };
@@ -77,6 +80,7 @@ export class Expense {
       amount: input.amount,
       expenseDate: input.expenseDate,
       receiptFileId: input.receiptFileId,
+      receiptUrl: input.receiptUrl,
       status: input.status,
       approval: input.approval,
       payment: input.payment
@@ -92,6 +96,7 @@ export class Expense {
   get expenseDate() { return this.props.expenseDate; }
   get description() { return this.props.description; }
   get receiptFileId() { return this.props.receiptFileId; }
+  get receiptUrl() { return this.props.receiptUrl; }
   get payment() { return this.props.payment; }
 
   approve(approver: UserId, decisionDate: DateOnly, reason?: string) {
@@ -153,7 +158,7 @@ export class Expense {
   }
 
   /** Receipts can be attached before or after approval, never after payment. */
-  attachReceipt(fileId: string) {
+  attachReceipt(fileId: string, url?: string) {
     const trimmed = fileId.trim();
     if (trimmed.length === 0) {
       throw new DomainError(DOMAIN_ERROR_CODES.INVALID_INPUT, "Receipt file id is required");
@@ -162,6 +167,8 @@ export class Expense {
       throw new DomainError(DOMAIN_ERROR_CODES.INVALID_TRANSITION, "Receipt can only be attached to a submitted or approved expense");
     }
     this.props.receiptFileId = trimmed;
+    // a replaced receipt never keeps the link of the previous file
+    this.props.receiptUrl = url?.trim() || undefined;
   }
 
   /** P2-8: pays exactly the approved amount — no amount argument. */
@@ -195,6 +202,7 @@ export class Expense {
       amountMillimes: this.props.amount.amount,
       expenseDate: this.props.expenseDate.value,
       receiptFileId: this.props.receiptFileId,
+      receiptUrl: this.props.receiptUrl,
       status: this.props.status,
       approval: this.props.approval
         ? {

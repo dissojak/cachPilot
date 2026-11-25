@@ -20,6 +20,12 @@ describe("Retainer", () => {
     expect(retainer.dueDates(DateOnly.from("2026-12-15")).map((d) => d.value)).toEqual(["2026-11-01", "2026-12-01"]);
   });
 
+  it("update() keeps the fields that are not given, even when they are passed as undefined", () => {
+    const retainer = Retainer.create(base);
+    retainer.update({ name: undefined, amount: undefined, intervalDays: 15, nextGenerationDate: undefined });
+    expect(retainer.snapshot()).toMatchObject({ name: "Monthly design", amountMillimes: 1500000, intervalDays: 15, nextGenerationDate: "2026-11-01" });
+  });
+
   it("generates nothing while paused, and pause/resume follow the state machine", () => {
     const retainer = Retainer.create(base);
     retainer.pause();

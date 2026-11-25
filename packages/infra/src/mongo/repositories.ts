@@ -1,6 +1,6 @@
 import { connectDb, CompanyModel, UserModel, MembershipModel, PartyModel, InvoiceModel, PaymentModel, ExpenseModel, CashMovementModel, ScenarioModel, RetainerModel, AuditLogModel, CounterModel } from "@cashpilot/db";
 import type { Company, User, Membership, Party, Invoice, Expense, Scenario, Retainer } from "@cashpilot/domain";
-import type { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId } from "@cashpilot/domain";
+import type { CompanyId, UserId, PartyId, InvoiceId, PaymentId, ExpenseId, ScenarioId, RetainerId, CashMovementId } from "@cashpilot/domain";
 import type {
   CompanyRepository, UserRepository, MembershipRepository, PartyRepository, InvoiceRepository, PaymentRepository,
   ExpenseRepository, CashMovementRepository, ScenarioRepository, RetainerRepository, AuditLogRepository, AuditLogEntry,
@@ -154,6 +154,11 @@ export class MongoExpenseRepository implements ExpenseRepository {
 }
 
 export class MongoCashMovementRepository implements CashMovementRepository {
+  async byId(id: CashMovementId) {
+    await connectDb();
+    const doc = await CashMovementModel.findById(id.value).lean();
+    return doc ? cashMovementMapper.toDomain(doc) : null;
+  }
   async byCompany(companyId: CompanyId) {
     await connectDb();
     return (await CashMovementModel.find({ companyId: companyId.value }).sort({ movementDate: 1 }).lean()).map(cashMovementMapper.toDomain);

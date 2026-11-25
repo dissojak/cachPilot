@@ -19,6 +19,8 @@ export * from "./simulation";
 
 export * from "./retainers";
 
+export * from "./audit";
+
 export * from "./access";
 
 export * from "./errors";

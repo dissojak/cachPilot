@@ -183,3 +183,24 @@ describe("plannedDisbursement (forecast input)", () => {
     expect(paid.plannedDisbursement()).toBeNull();
   });
 });
+
+describe("Expense receipt link", () => {
+  it("keeps the file id and the link, and drops the old link when the receipt is replaced", () => {
+    const expense = createExpense();
+    expense.attachReceipt("file-1", "https://files.example/receipt-1.png");
+    expect(expense.snapshot()).toMatchObject({ receiptFileId: "file-1", receiptUrl: "https://files.example/receipt-1.png" });
+    expense.attachReceipt("file-2");
+    expect(expense.snapshot()).toMatchObject({ receiptFileId: "file-2", receiptUrl: undefined });
+  });
+
+  it("round-trips the link through restore", () => {
+    const expense = createExpense();
+    expense.attachReceipt("file-1", " https://files.example/r.pdf ");
+    const restored = Expense.restore({
+      id: expense.id, companyId, submittedBy: submitter, category: "Travel", description: "x",
+      amount: Money.positive(1000), expenseDate: DateOnly.from("2026-11-15"),
+      receiptFileId: "file-1", receiptUrl: expense.receiptUrl, status: "submitted",
+    });
+    expect(restored.receiptUrl).toBe("https://files.example/r.pdf");
+  });
+});

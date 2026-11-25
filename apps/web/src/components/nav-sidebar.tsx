@@ -61,6 +61,16 @@ const icons = {
       <circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6" />
     </svg>
   ),
+  alerts: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
+    </svg>
+  ),
+  audit: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6l8-3z" /><path d="M9 12l2 2 4-4" />
+    </svg>
+  ),
   menu: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       <path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" />
@@ -80,6 +90,7 @@ const sections: { title: string; items: NavItem[] }[] = [
       { label: "Dashboard", href: "/dashboard", icon: icons.dashboard, permission: "dashboard.view" },
       { label: "Cash", href: "/cash", icon: icons.cash, permission: "cash.view" },
       { label: "Forecast", href: "/forecast", icon: icons.forecast, permission: "forecast.view" },
+      { label: "Alerts", href: "/alerts", icon: icons.alerts, permission: "dashboard.view" },
     ],
   },
   {
@@ -102,6 +113,7 @@ const sections: { title: string; items: NavItem[] }[] = [
     items: [
       { label: "Company", href: "/settings/company", icon: icons.company, permission: "company.manage" },
       { label: "Members", href: "/settings/members", icon: icons.members, permission: "expenses.submit" },
+      { label: "Audit log", href: "/settings/audit", icon: icons.audit, permission: "audit.view" },
     ],
   },
 ];

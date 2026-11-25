@@ -123,6 +123,7 @@ const expenseSchema = new Schema(
     amountMillimes: { ...moneyField, min: 1 },
     expenseDate: { type: String, required: true },
     receiptFileId: { type: String, trim: true },
+    receiptUrl: { type: String, trim: true },
     status: {
       type: String,
       required: true,
