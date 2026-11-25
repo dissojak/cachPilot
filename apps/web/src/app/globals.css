@@ -342,3 +342,19 @@ body {
 .row-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 
 .plain-list { list-style: none; padding: 0; margin: 0; }
+
+/* ---------- system states (error, loading, forbidden) and page widths ---------- */
+.state { display: grid; place-items: center; min-height: 60vh; }
+.state-card { padding: 36px; text-align: center; width: 100%; max-width: 520px; }
+.state-card .page-title, .state-card h1 { font-size: 32px; line-height: 36px; margin: 10px 0 12px; }
+.state-card .btn { margin-top: 16px; }
+.progress { width: 140px; height: 4px; margin: 18px auto 0; border-radius: 999px; background: rgba(31, 107, 78, 0.15); overflow: hidden; }
+.progress span { display: block; width: 40%; height: 100%; background: var(--pine-600); animation: motionSlide 900ms ease-in-out infinite alternate; }
+.skeleton { opacity: 0.55; animation: pulse 1.6s ease-in-out infinite; }
+.skeleton-block { height: 120px; }
+@keyframes pulse { 50% { opacity: 0.3; } }
+.width-form { max-width: 760px; }
+.width-narrow { max-width: 640px; }
+@media (prefers-reduced-motion: reduce) {
+  .progress span, .skeleton { animation: none; }
+}

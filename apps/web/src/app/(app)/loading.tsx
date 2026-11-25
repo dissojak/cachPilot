@@ -1,10 +1,10 @@
 export default function Loading() {
   return (
-    <main className="shell" aria-busy="true">
+    <main className="shell" aria-busy="true" aria-live="polite">
       <p className="mono">Loading</p>
-      <div className="glass card" style={{ height: 160, marginTop: 16, opacity: 0.6 }} />
-      <div className="grid-stats" style={{ marginTop: 20 }}>
-        {[0, 1, 2].map((key) => <div key={key} className="glass" style={{ height: 110, opacity: 0.5 }} />)}
+      <div className="glass card skeleton skeleton-block" style={{ marginTop: 16 }} />
+      <div className="grid-stats">
+        {[0, 1, 2].map((key) => <div key={key} className="glass skeleton stat" style={{ height: 110 }} />)}
       </div>
     </main>
   );
