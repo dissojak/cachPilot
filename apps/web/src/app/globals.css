@@ -400,3 +400,4 @@ body {
 .drawer-close { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 .chart-figure { margin: 0; }
 .skeleton-tile { height: 110px; }
+.hero .hero-amount { margin-top: 8px; }
