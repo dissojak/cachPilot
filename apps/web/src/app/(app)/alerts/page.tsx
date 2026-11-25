@@ -35,7 +35,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         {alerts.length === 0
           ? <EmptyState title="All clear" text="No overdue invoice, no expense waiting and the forecast stays above your threshold." />
           : (
-            <ul className="list" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            <ul className="list plain-list">
               {alerts.map((alert) => (
                 <li key={`${alert.type}-${alert.entityId}-${alert.date ?? ""}`}>
                   <Link href={alertHref(alert)} className={`alert-item${alertTone[alert.type] === "danger" ? " danger" : ""}`}>

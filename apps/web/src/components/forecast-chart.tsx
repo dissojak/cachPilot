@@ -21,7 +21,7 @@ export function ForecastChart({ base, simulated, label, baseLabel, simulatedLabe
   const lowest = (simulated ?? base).reduce((low, point) => (point.balanceMillimes < low.balanceMillimes ? point : low), (simulated ?? base)[0] ?? { date: "", balanceMillimes: 0 });
 
   return (
-    <figure style={{ margin: 0 }}>
+    <figure className="chart-figure">
       <svg viewBox={`0 0 ${width} ${height}`} className="chart" role="img" aria-label={`${label}. Lowest balance ${money(lowest.balanceMillimes)} on ${lowest.date}.`}>
         <line x1={pad.left} x2={width - pad.right} y1={y(0)} y2={y(0)} stroke="#C2452B" strokeOpacity="0.35" strokeDasharray="2 4" />
         <text x={width - pad.right} y={y(0) - 4} textAnchor="end" fontSize="10" fill="#C2452B">0 DNT</text>
