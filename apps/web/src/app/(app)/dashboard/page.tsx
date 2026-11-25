@@ -3,14 +3,8 @@ import { PageHeader, Card, Stat, EmptyState } from "@cashpilot/ui";
 import { useCases } from "@/container";
 import { requirePermission } from "@/lib/session";
 import { money, date } from "@/lib/format";
+import { alertHref, alertTone } from "@/lib/alerts";
 import { ForecastChart } from "@/components/forecast-chart";
-
-const alertLink: Record<string, (id: string) => string> = {
-  invoice_overdue: (id) => `/invoices/${id}`,
-  expense_pending: (id) => `/expenses/${id}`,
-  forecast_negative: () => "/forecast",
-  forecast_below_threshold: () => "/forecast",
-};
 
 export default async function DashboardPage() {
   const actor = await requirePermission("dashboard.view");
@@ -18,15 +12,19 @@ export default async function DashboardPage() {
   const { forecast } = data;
   const [, d30, d60, d90] = forecast.horizons;
   const shortage = forecast.shortageWindows[0];
+  const negative = data.realBalanceMillimes < 0;
 
   return (
     <main className="shell">
-      <PageHeader eyebrow="Dashboard" title={data.company.name} description={`Situation on ${date(forecast.referenceDate)}`} />
+      <PageHeader title={data.company.name} description={`Situation on ${date(forecast.referenceDate)}`} />
 
-      <section className="glass card" style={{ marginBottom: 24 }}>
+      <section className="glass hero">
         <p className="mono">Real balance</p>
-        <div className="hero-amount" style={{ marginTop: 8, color: data.realBalanceMillimes < 0 ? "var(--clay)" : undefined }}>{money(data.realBalanceMillimes)}</div>
-        <p className="muted" style={{ margin: "12px 0 0" }}>Opening balance plus every recorded cash movement up to today.</p>
+        <div className={`hero-amount${negative ? " is-negative" : ""}`}>{money(data.realBalanceMillimes)}</div>
+        <p className="muted hero-note">The opening balance plus every cash movement recorded up to today.</p>
+        {shortage
+          ? <p className="notice notice-danger" role="status">Cash shortage from {date(shortage.start)} to {date(shortage.end)}. Lowest point {money(shortage.minimumMillimes)} on {date(shortage.minimumDate)}.</p>
+          : <p className="notice notice-ok" role="status">No cash shortage expected in the next 90 days.</p>}
       </section>
 
       <div className="grid-stats">
@@ -37,31 +35,29 @@ export default async function DashboardPage() {
               tone={value && value.balanceMillimes < 0 ? "danger" : "success"} note={value ? date(value.date) : undefined} />
           );
         })}
-        <Stat label="To watch" value={String(data.counts.alerts)} tone={data.counts.alerts ? "danger" : "success"}
+        <Stat label="Needs attention" value={String(data.counts.alerts)} tone={data.counts.alerts ? "danger" : "success"}
           note={`${data.counts.overdueInvoices} overdue · ${data.counts.pendingExpenses} to approve`} />
       </div>
 
       <div className="grid-2">
-        <Card title="Next 90 days" aside={<Link href="/forecast" className="btn btn-secondary btn-small">Details</Link>}>
+        <Card title="Next 90 days" aside={<Link href="/forecast" className="btn btn-secondary btn-small">Full forecast</Link>}>
           <ForecastChart base={forecast.series} label="Forecast balance for the next 90 days" />
-          {shortage
-            ? <p className="field-error" style={{ marginTop: 12 }}>Cash shortage from {date(shortage.start)} to {date(shortage.end)}, lowest {money(shortage.minimumMillimes)} on {date(shortage.minimumDate)}.</p>
-            : <p className="muted" style={{ marginTop: 12 }}>No cash shortage expected in the next 90 days.</p>}
         </Card>
 
-        <Card title="Alerts">
+        <Card title="Alerts" aside={data.alerts.length > 0 ? <Link href="/alerts" className="btn btn-secondary btn-small">See all</Link> : undefined}>
           {data.alerts.length === 0
-            ? <EmptyState title="All clear" text="No overdue invoice, no expense waiting, and the forecast stays positive." />
+            ? <EmptyState title="All clear" text="No overdue invoice, no expense waiting and the forecast stays positive." />
             : (
-              <div className="list">
-                {data.alerts.map((alert) => (
-                  <Link key={`${alert.type}-${alert.entityId}-${alert.date ?? ""}`} href={alertLink[alert.type]?.(alert.entityId) ?? "/"}
-                    className={`alert-item ${alert.type === "expense_pending" ? "" : "danger"}`}>
-                    <strong>{alert.message}</strong>
-                    {alert.date && <small className="muted">{date(alert.date)}</small>}
-                  </Link>
+              <ul className="list plain-list">
+                {data.alerts.slice(0, 5).map((alert) => (
+                  <li key={`${alert.type}-${alert.entityId}-${alert.date ?? ""}`}>
+                    <Link href={alertHref(alert)} className={`alert-item${alertTone[alert.type] === "danger" ? " danger" : ""}`}>
+                      <strong>{alert.message}</strong>
+                      {alert.date && <small className="muted">{date(alert.date)}</small>}
+                    </Link>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
         </Card>
       </div>
