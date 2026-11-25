@@ -26,7 +26,7 @@ colors:
 typography:
   display: { family: "Outfit", weights: [500, 600, 700], tracking: "-0.03em" }
   ui:      { family: "Inter",  weights: [400, 500, 600], features: "tnum, cv11" }
-  mono:    { family: "JetBrains Mono", weights: [400, 500], transform: "uppercase", tracking: "0.12em", use: "tiny technical labels" }
+  label:   { family: "Inter", weights: [600], transform: "none", use: "small labels above values; sentence case, never uppercase" }
   accent-alt: { family: "Fraunces", style: "italic", use: "optional single hero word only" }
 rounded: { card: 28, inner: 20, input: 16, pill: 999 }
 spacing: { base: 8, scale: [4, 8, 12, 16, 24, 32, 48, 64, 96] }
