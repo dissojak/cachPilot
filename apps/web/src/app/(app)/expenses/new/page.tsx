@@ -6,7 +6,7 @@ import { submitExpenseAction } from "../actions";
 export default async function NewExpensePage() {
   await requirePermission("expenses.submit");
   return (
-    <main className="shell" style={{ maxWidth: 720 }}>
+    <main className="shell width-form">
       <PageHeader eyebrow="Expenses" title="Submit an expense" description="The owner approves or refuses it. Once approved it appears in the forecast at its date." />
       <Card>
         <ActionForm action={submitExpenseAction}>

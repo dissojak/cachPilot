@@ -9,7 +9,7 @@ export default async function CompanySettingsPage() {
   const actor = await requirePermission("company.manage");
   const company = await useCases.getCompany.execute(actor);
   return (
-    <main className="shell" style={{ maxWidth: 720 }}>
+    <main className="shell width-form">
       <PageHeader eyebrow="Settings" title="Company" description="The opening balance is a cash movement: correct it from the Cash page with an adjustment." />
       <Card>
         <ActionForm action={updateCompanyAction}>

@@ -19,7 +19,7 @@ export default async function OnboardingPage() {
   const companies = await useCases.listMyCompanies.execute({ userId: actor.userId });
 
   return (
-    <main className="shell" style={{ maxWidth: 640 }}>
+    <main className="shell width-narrow">
       <p className="mono">Welcome, {actor.name}</p>
       <h1 className="page-title">Create your company</h1>
       <p className="muted page-description">
@@ -28,7 +28,7 @@ export default async function OnboardingPage() {
           : "Add another company you manage. Your e-mail is "}
         <strong>{actor.email}</strong>.
       </p>
-      <section className="glass card" style={{ marginTop: 24 }}>
+      <section className="glass card mt-24">
         <ActionForm action={registerCompanyAction}>
           <Field label="Company name" name="name" required autoComplete="organization" />
           <SelectField label="Sector" name="sector" options={sectors} />

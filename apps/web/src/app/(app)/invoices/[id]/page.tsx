@@ -43,7 +43,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                 </tbody>
               </table>
             </div>
-            <dl className="kv" style={{ marginTop: 18 }}>
+            <dl className="kv mt-16">
               <dt>Total</dt><dd>{money(invoice.totalMillimes)}</dd>
               <dt>Paid</dt><dd className="amount-in">{money(invoice.totalMillimes - invoice.remainingMillimes)}</dd>
               <dt>Remaining</dt><dd>{money(invoice.remainingMillimes)}</dd>
@@ -69,7 +69,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           {manage && invoice.status === "draft" && (
             <Card title="Draft">
               <p className="muted">A draft is not in the forecast yet. Validate it to make it official.</p>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div className="actions-row">
                 <ActionForm action={validateInvoiceAction} className="inline-form">
                   <input type="hidden" name="invoiceId" value={invoice.id} />
                   <SubmitButton>Validate invoice</SubmitButton>
