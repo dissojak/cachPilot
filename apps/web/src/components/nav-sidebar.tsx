@@ -126,7 +126,7 @@ function NavLinks({ onNavigate, stagger = false, permissions }: { onNavigate?: (
     .map((section) => ({ ...section, items: section.items.filter((item) => permissions.includes(item.permission)) }))
     .filter((section) => section.items.length > 0);
   return (
-    <nav aria-label="Main" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+    <nav aria-label="Main" className="nav-list">
       {visible.map((section) => (
         <div key={section.title}>
           <p className="nav-section-title">{section.title}</p>
@@ -145,16 +145,15 @@ function NavLinks({ onNavigate, stagger = false, permissions }: { onNavigate?: (
                   href={item.href}
                   onClick={onNavigate}
                   className={`nav-link ${active ? "active" : ""}`}
-                  style={{ position: "relative" }}
                 >
                   {active && (
                     <motion.span
                       layoutId={onNavigate ? "nav-active-drawer" : "nav-active"}
                       transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                      style={{ position: "absolute", inset: 0, borderRadius: 14, background: "var(--pine-600)" }}
+                      className="nav-pill"
                     />
                   )}
-                  <span style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, zIndex: 1 }}>
+                  <span className="nav-label">
                     {item.icon}
                     {item.label}
                   </span>
@@ -180,60 +179,49 @@ function SidebarContent({ email, name, onNavigate, stagger, role, companyName, c
 
   return (
     <>
-      <Link href="/" onClick={onNavigate} style={{ textDecoration: "none", marginBottom: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div className="nav-avatar" style={{ width: 42, height: 42, borderRadius: 16 }}>
-            <span style={{ fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: 15 }}>C</span>
+      <Link href="/" onClick={onNavigate} className="nav-brand">
+        <div className="nav-brand-row">
+          <div className="nav-avatar nav-avatar-lg">
+            <span>C</span>
           </div>
           <div>
-            <div style={{ fontFamily: "Outfit, system-ui, sans-serif", fontWeight: 650, fontSize: 17, color: "var(--text-primary)" }}>CashPilot</div>
-            <div className="mono" style={{ margin: 0 }}>{companyName ?? "Company"}</div>
+            <div className="nav-brand-name">CashPilot</div>
+            <div className="mono">{companyName ?? "Company"}</div>
           </div>
         </div>
       </Link>
 
       {companies.length > 1 && (
-        <form action={switchCompanyAction} style={{ marginBottom: 12 }}>
-          <label className="mono" htmlFor="company-switcher" style={{ display: "block", marginBottom: 6 }}>Company</label>
-          <select id="company-switcher" name="companyId" defaultValue={companyId} onChange={(event) => event.currentTarget.form?.requestSubmit()}
-            style={{ width: "100%", height: 38, borderRadius: 12, border: "1px solid var(--sage-200)", padding: "0 10px", background: "rgba(255,255,255,0.8)" }}>
+        <form action={switchCompanyAction} className="company-switch">
+          <label className="mono company-label" htmlFor="company-switcher">Company</label>
+          <select id="company-switcher" name="companyId" className="company-select" defaultValue={companyId} onChange={(event) => event.currentTarget.form?.requestSubmit()}>
             {companies.map((company) => <option key={company.companyId} value={company.companyId}>{company.name}</option>)}
           </select>
         </form>
       )}
 
       <NavLinks onNavigate={onNavigate} stagger={stagger} permissions={permissions} />
-      <Link href="/onboarding" onClick={onNavigate} className="nav-link" style={{ marginTop: 8, fontSize: 13 }}>+ New company</Link>
+      <Link href="/onboarding" onClick={onNavigate} className="nav-link nav-link-secondary">+ New company</Link>
 
-      <div style={{ marginTop: "auto", paddingTop: 16 }}>
-        <div className="glass" style={{ padding: 14, borderRadius: 18, display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-          <div className="nav-avatar" style={{ flexShrink: 0 }}>{initials || "U"}</div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ fontWeight: 650, fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div className="nav-footer">
+        <div className="glass user-card">
+          <div className="nav-avatar">{initials || "U"}</div>
+          <div className="user-meta">
+            <div className="user-name-row">
+              <div className="user-name">
                 {name ?? "Team member"}
               </div>
-              <span
-                className="mono"
-                style={{
-                  flexShrink: 0,
-                  fontSize: 9,
-                  padding: "2px 7px",
-                  borderRadius: 999,
-                  background: role === "owner" ? "rgba(31,107,78,0.14)" : role === "finance_manager" ? "rgba(227,168,87,0.18)" : "rgba(207,224,204,0.9)",
-                  color: role === "owner" ? "#1F6B4E" : role === "finance_manager" ? "#9C6B1E" : "#4A6256",
-                }}
-              >
+              <span className={`role-badge role-${role ?? "member"}`}>
                 {role === "owner" ? "owner" : role === "finance_manager" ? "finance" : role ?? "member"}
               </span>
             </div>
-            <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div className="user-email">
               {email ?? "signed in"}
             </div>
           </div>
         </div>
         <form action={signOutAction}>
-          <button type="submit" className="nav-signout" style={{ width: "100%" }}>
+          <button type="submit" className="nav-signout nav-signout-full">
             Sign out
           </button>
         </form>
@@ -261,7 +249,7 @@ export default function NavSidebar(props: SidebarProps) {
         <button type="button" className="app-menu-button" aria-label="Open menu" onClick={() => setDrawerOpen(true)}>
           {icons.menu}
         </button>
-        <div style={{ fontFamily: "Outfit, system-ui, sans-serif", fontWeight: 650, fontSize: 16 }}>CashPilot</div>
+        <div className="nav-brand-name">CashPilot</div>
       </div>
 
       <AnimatePresence>
@@ -273,7 +261,7 @@ export default function NavSidebar(props: SidebarProps) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               onClick={close}
-              style={{ position: "fixed", inset: 0, background: "rgba(11, 31, 23, 0.35)", zIndex: 55, backdropFilter: "blur(2px)" }}
+              className="drawer-backdrop"
             />
             <motion.aside
               className="sidebar-drawer"
@@ -282,7 +270,7 @@ export default function NavSidebar(props: SidebarProps) {
               exit={{ x: -280 }}
               transition={{ type: "spring", stiffness: 320, damping: 34 }}
             >
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+              <div className="drawer-close">
                 <button type="button" className="app-menu-button" aria-label="Close menu" onClick={close}>
                   {icons.close}
                 </button>
