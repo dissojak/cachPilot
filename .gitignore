@@ -8,3 +8,6 @@ coverage
 *.log
 
 *.tsbuildinfo
+
+.claude/
+.DS_Store
