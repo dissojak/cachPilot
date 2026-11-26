@@ -1,0 +1,5 @@
+{
+  "buildCommand": "pnpm turbo run build --filter=@cashpilot/web",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": "nextjs"
+}
