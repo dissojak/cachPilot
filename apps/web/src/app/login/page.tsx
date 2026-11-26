@@ -28,22 +28,21 @@ export default async function LoginPage({
         </div>
 
         <ul className="auth-points">
-          <li>Real cash from every recorded movement</li>
-          <li>Forecast 90 days ahead from unpaid invoices</li>
+          <li>Your real cash, from every recorded movement</li>
+          <li>A 90-day forecast built from unpaid invoices</li>
           <li>Test a late payment before it happens</li>
         </ul>
       </section>
 
       <section className="auth-panel">
         <div className="auth-form">
-          <p className="mono">Sign in</p>
-          <h1 className="auth-title">Open your company</h1>
-          <p className="muted auth-copy">Use the Google account that belongs to your company.</p>
+          <h1 className="auth-title">Sign in to your company</h1>
+          <p className="muted auth-copy">Use the Google account your company uses for CashPilot.</p>
           <form action={signInWithGoogle}>
             <input type="hidden" name="callbackUrl" value={redirectTo} />
             <button type="submit" className="btn btn-block">Continue with Google</button>
           </form>
-          <p className="field-hint auth-fine">CashPilot never stores a password. Access follows the roles your company gives you.</p>
+          <p className="field-hint auth-fine">CashPilot never stores a password. What you can do depends on the role your company gives you.</p>
         </div>
       </section>
     </main>

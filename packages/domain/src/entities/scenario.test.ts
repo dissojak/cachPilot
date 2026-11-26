@@ -83,6 +83,32 @@ describe("Scenario.removeHypothesis", () => {
   });
 });
 
+describe("Scenario.replaceHypothesis", () => {
+  it("edits the hypothesis in place and keeps the order", () => {
+    const scenario = createScenario();
+    scenario.addHypothesis({ type: "client_delay", invoiceId: "invoice-001", delayDays: 20 });
+    scenario.addHypothesis({ type: "extra_income", amount: Money.of(500000), date: referenceDate, label: "Bonus" });
+    scenario.replaceHypothesis(0, { type: "client_delay", invoiceId: "invoice-001", delayDays: 3 });
+    scenario.replaceHypothesis(1, { type: "new_expense", amount: Money.of(900000), date: DateOnly.from("2026-11-15"), label: " Laptop " });
+    expect(scenario.hypotheses).toEqual([
+      { type: "client_delay", invoiceId: "invoice-001", delayDays: 3 },
+      { type: "new_expense", amount: Money.of(900000), date: DateOnly.from("2026-11-15"), label: "Laptop" },
+    ]);
+  });
+
+  it("validates like an add and leaves the old value when it fails", () => {
+    const scenario = createScenario();
+    scenario.addHypothesis({ type: "client_delay", invoiceId: "invoice-001", delayDays: 20 });
+    expectDomainError(() => scenario.replaceHypothesis(0, { type: "client_delay", invoiceId: "invoice-001", delayDays: 0 }), "SCENARIO_HYPOTHESIS_INVALID");
+    expect(scenario.hypotheses).toEqual([{ type: "client_delay", invoiceId: "invoice-001", delayDays: 20 }]);
+  });
+
+  it("rejects an out-of-range index", () => {
+    const scenario = createScenario();
+    expectDomainError(() => scenario.replaceHypothesis(0, { type: "client_delay", invoiceId: "invoice-001", delayDays: 5 }), "INVALID_INPUT");
+  });
+});
+
 describe("Scenario.snapshot", () => {
   it("serializes the hypotheses as primitives", () => {
     const scenario = createScenario();

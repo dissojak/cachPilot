@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { useCases } from "@/container";
 import { requireActor } from "@/lib/session";
 import { runAction, fields } from "@/lib/action";
@@ -24,6 +25,22 @@ export async function createRetainerAction(_: ActionResult | null, formData: For
     });
     refresh();
     return "Retainer created.";
+  });
+}
+
+export async function updateRetainerAction(_: ActionResult | null, formData: FormData) {
+  const actor = await requireActor();
+  const schema = z.object({
+    retainerId: fields.id, name: fields.text, amount: fields.amount,
+    intervalDays: fields.positiveInt, nextGenerationDate: fields.date,
+  });
+  return runAction(schema, formData, async (input) => {
+    await useCases.updateRetainer.execute({
+      userId: actor.userId, companyId: actor.companyId, retainerId: input.retainerId, name: input.name,
+      amountMillimes: input.amount, intervalDays: input.intervalDays, nextGenerationDate: input.nextGenerationDate,
+    });
+    refresh();
+    redirect("/retainers");
   });
 }
 

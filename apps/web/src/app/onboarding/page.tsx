@@ -20,23 +20,21 @@ export default async function OnboardingPage() {
 
   return (
     <main className="shell width-narrow">
-      <p className="mono">Welcome, {actor.name}</p>
       <h1 className="page-title">Create your company</h1>
       <p className="muted page-description">
         {companies.length === 0
-          ? "You are not a member of any company yet. Create one (you become its owner), or ask an owner to add your e-mail "
-          : "Add another company you manage. Your e-mail is "}
-        <strong>{actor.email}</strong>.
+          ? <>You are not a member of a company yet. Create one and you become its owner. Or ask an owner to add <strong>{actor.email}</strong> to theirs.</>
+          : <>Add another company you manage. You are signed in as <strong>{actor.email}</strong>.</>}
       </p>
       <section className="glass card mt-24">
-        <ActionForm action={registerCompanyAction}>
+        <ActionForm action={registerCompanyAction} className="form">
           <Field label="Company name" name="name" required autoComplete="organization" />
           <SelectField label="Sector" name="sector" options={sectors} />
           <div className="form-row">
-            <Field label="Cash in the bank today (DNT)" name="openingBalance" inputMode="decimal" placeholder="5000.000" required hint="Your opening balance, recorded once as a cash movement" />
+            <Field label="Cash in the bank today (DNT)" name="openingBalance" inputMode="decimal" placeholder="5000.000" required hint="Your starting cash. It is recorded once, as the opening balance." />
             <Field label="On date" name="openingDate" type="date" defaultValue={today} max={today} required />
           </div>
-          <SubmitButton>Create company</SubmitButton>
+          <div className="form-footer"><SubmitButton>Create company</SubmitButton></div>
         </ActionForm>
       </section>
     </main>

@@ -62,6 +62,16 @@ export class Scenario {
    * form (no free fields around).
    */
   addHypothesis(hypothesis: Hypothesis) {
+    this.props.hypotheses.push(Scenario.validated(hypothesis));
+  }
+
+  /** Edits one hypothesis in place: same validation as adding, same position in the list. */
+  replaceHypothesis(index: number, hypothesis: Hypothesis) {
+    this.assertIndex(index);
+    this.props.hypotheses[index] = Scenario.validated(hypothesis);
+  }
+
+  private static validated(hypothesis: Hypothesis): Hypothesis {
     if (hypothesis.type === "client_delay") {
       const invoiceId = hypothesis.invoiceId.trim();
       if (invoiceId.length === 0) {
@@ -71,8 +81,7 @@ export class Scenario {
       if (!Number.isInteger(delayDays) || delayDays < 1 || delayDays > 365) {
         throw new DomainError(DOMAIN_ERROR_CODES.SCENARIO_HYPOTHESIS_INVALID, `Delay must be between 1 and 365 days: ${delayDays}`);
       }
-      this.props.hypotheses.push({ type: "client_delay", invoiceId, delayDays });
-      return;
+      return { type: "client_delay", invoiceId, delayDays };
     }
 
     if (!hypothesis.amount.isPositive()) {
@@ -82,15 +91,19 @@ export class Scenario {
     if (label.length === 0) {
       throw new DomainError(DOMAIN_ERROR_CODES.SCENARIO_HYPOTHESIS_INVALID, "A hypothesis needs a label");
     }
-    this.props.hypotheses.push(hypothesis.type === "new_expense"
+    return hypothesis.type === "new_expense"
       ? { type: "new_expense", amount: hypothesis.amount, date: hypothesis.date, label }
-      : { type: "extra_income", amount: hypothesis.amount, date: hypothesis.date, label });
+      : { type: "extra_income", amount: hypothesis.amount, date: hypothesis.date, label };
   }
 
-  removeHypothesis(index: number) {
+  private assertIndex(index: number) {
     if (!Number.isInteger(index) || index < 0 || index >= this.props.hypotheses.length) {
       throw new DomainError(DOMAIN_ERROR_CODES.INVALID_INPUT, `Hypothesis index does not exist: ${index}`);
     }
+  }
+
+  removeHypothesis(index: number) {
+    this.assertIndex(index);
     this.props.hypotheses.splice(index, 1);
   }
 

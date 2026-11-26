@@ -12,6 +12,15 @@ export type HypothesisInput =
   | { type: "new_expense"; amountMillimes: number; date: string; label: string }
   | { type: "extra_income"; amountMillimes: number; date: string; label: string };
 
+/** Primitives from the web → the domain union (shared by add and update). */
+export function toHypothesis(input: HypothesisInput): Hypothesis {
+  return input.type === "client_delay"
+    ? { type: "client_delay", invoiceId: input.invoiceId, delayDays: input.delayDays }
+    : input.type === "new_expense"
+      ? { type: "new_expense", amount: Money.positive(input.amountMillimes), date: DateOnly.from(input.date), label: input.label }
+      : { type: "extra_income", amount: Money.positive(input.amountMillimes), date: DateOnly.from(input.date), label: input.label };
+}
+
 export interface AddHypothesisInput { userId: string; companyId: string; scenarioId: string; hypothesis: HypothesisInput; }
 
 export class AddHypothesis {
@@ -21,13 +30,7 @@ export class AddHypothesis {
     const scenario = await this.scenarios.byId(ScenarioId.from(input.scenarioId));
     if (!scenario || !scenario.companyId.equals(CompanyId.from(input.companyId))) throw new DomainError(DOMAIN_ERROR_CODES.SCENARIO_NOT_FOUND, "Scenario not found");
 
-    const hypothesis: Hypothesis = input.hypothesis.type === "client_delay"
-      ? { type: "client_delay", invoiceId: input.hypothesis.invoiceId, delayDays: input.hypothesis.delayDays }
-      : input.hypothesis.type === "new_expense"
-        ? { type: "new_expense", amount: Money.positive(input.hypothesis.amountMillimes), date: DateOnly.from(input.hypothesis.date), label: input.hypothesis.label }
-        : { type: "extra_income", amount: Money.positive(input.hypothesis.amountMillimes), date: DateOnly.from(input.hypothesis.date), label: input.hypothesis.label };
-
-    scenario.addHypothesis(hypothesis);
+    scenario.addHypothesis(toHypothesis(input.hypothesis));
     await this.scenarios.save(scenario);
     return scenario.snapshot();
   }

@@ -6,7 +6,7 @@ import {
   SubmitExpense, AttachReceipt, UpdateSubmittedExpense, ListExpenses, GetExpense, ApproveExpense, RefuseExpense, MarkExpensePaid,
   SetOpeningBalance, RecordAdjustment, ReverseMovement, ListCashMovements, GetRealBalance, ListAuditLog,
   ForecastContextLoader, GetForecast, ListAlerts, GetDashboard,
-  CreateScenario, AddHypothesis, RemoveHypothesis, RunSimulation, CompareScenarios, ListScenarios, GetScenario,
+  CreateScenario, AddHypothesis, UpdateHypothesis, RemoveHypothesis, RunSimulation, CompareScenarios, ListScenarios, GetScenario,
   CreateRetainer, UpdateRetainer, PauseRetainer, ResumeRetainer, GenerateRetainerInvoices, ListRetainers,
   ResolveActor, ListMyCompanies,
 } from "@cashpilot/application";
@@ -74,6 +74,7 @@ export const useCases = {
 
   createScenario: new CreateScenario(a.scenarios, a.memberships, a.clock),
   addHypothesis: new AddHypothesis(a.scenarios, a.memberships),
+  updateHypothesis: new UpdateHypothesis(a.scenarios, a.memberships),
   removeHypothesis: new RemoveHypothesis(a.scenarios, a.memberships),
   runSimulation,
   compareScenarios: new CompareScenarios(runSimulation),

@@ -13,40 +13,41 @@ export default async function DashboardPage() {
   const [, d30, d60, d90] = forecast.horizons;
   const shortage = forecast.shortageWindows[0];
   const negative = data.realBalanceMillimes < 0;
+  const attention = data.counts.overdueInvoices + data.counts.pendingExpenses;
 
   return (
     <main className="shell">
-      <PageHeader title={data.company.name} description={`Situation on ${date(forecast.referenceDate)}`} />
+      <PageHeader title={data.company.name} description={`Where your cash stands on ${date(forecast.referenceDate)}.`} />
 
-      <section className="glass hero">
-        <p className="mono">Real balance</p>
+      <section className="glass hero" aria-labelledby="real-balance-label">
+        <p id="real-balance-label" className="mono">Real balance</p>
         <div className={`hero-amount${negative ? " is-negative" : ""}`}>{money(data.realBalanceMillimes)}</div>
         <p className="muted hero-note">The opening balance plus every cash movement recorded up to today.</p>
         {shortage
-          ? <p className="notice notice-danger" role="status">Cash shortage from {date(shortage.start)} to {date(shortage.end)}. Lowest point {money(shortage.minimumMillimes)} on {date(shortage.minimumDate)}.</p>
-          : <p className="notice notice-ok" role="status">No cash shortage expected in the next 90 days.</p>}
+          ? <p className="notice notice-danger" role="status">Cash runs short from {date(shortage.start)} to {date(shortage.end)}. The lowest point is {money(shortage.minimumMillimes)} on {date(shortage.minimumDate)}.</p>
+          : <p className="notice notice-ok" role="status">No cash shortage is expected in the next 90 days.</p>}
       </section>
 
       <div className="grid-stats">
-        {[["In 30 days", d30], ["In 60 days", d60], ["In 90 days", d90]].map(([label, point]) => {
+        {[{ days: 30, point: d30 }, { days: 60, point: d60 }, { days: 90, point: d90 }].map(({ days, point }) => {
           const value = typeof point === "object" && point ? point : undefined;
           return (
-            <Stat key={String(label)} label={`Forecast ${label}`} value={value ? money(value.balanceMillimes) : "—"}
-              tone={value && value.balanceMillimes < 0 ? "danger" : "success"} note={value ? date(value.date) : undefined} />
+            <Stat key={days} label={`Forecast in ${days} days`} value={value ? money(value.balanceMillimes) : "—"}
+              tone={value && value.balanceMillimes < 0 ? "danger" : "success"} note={value ? `Projected for ${date(value.date)}` : undefined} />
           );
         })}
-        <Stat label="Needs attention" value={String(data.counts.alerts)} tone={data.counts.alerts ? "danger" : "success"}
-          note={`${data.counts.overdueInvoices} overdue · ${data.counts.pendingExpenses} to approve`} />
+        <Stat label="Needs attention" value={String(attention)} tone={attention ? "danger" : "success"}
+          note={`${data.counts.overdueInvoices} overdue ${data.counts.overdueInvoices === 1 ? "invoice" : "invoices"}, ${data.counts.pendingExpenses} ${data.counts.pendingExpenses === 1 ? "expense" : "expenses"} to approve`} />
       </div>
 
       <div className="grid-2">
-        <Card title="Next 90 days" aside={<Link href="/forecast" className="btn btn-secondary btn-small">Full forecast</Link>}>
+        <Card title="Next 90 days" aside={<Link href="/forecast" className="btn btn-secondary btn-small">Open forecast</Link>}>
           <ForecastChart base={forecast.series} label="Forecast balance for the next 90 days" />
         </Card>
 
-        <Card title="Alerts" aside={data.alerts.length > 0 ? <Link href="/alerts" className="btn btn-secondary btn-small">See all</Link> : undefined}>
+        <Card title="Attention" aside={data.alerts.length > 0 ? <Link href="/alerts" className="btn btn-secondary btn-small">See all</Link> : undefined}>
           {data.alerts.length === 0
-            ? <EmptyState title="All clear" text="No overdue invoice, no expense waiting and the forecast stays positive." />
+            ? <EmptyState title="Nothing needs you" text="No invoice is overdue, no expense is waiting and the forecast stays positive." />
             : (
               <ul className="list plain-list">
                 {data.alerts.slice(0, 5).map((alert) => (

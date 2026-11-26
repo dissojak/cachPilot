@@ -16,11 +16,13 @@ export default async function ForecastPage() {
 
   return (
     <main className="shell">
-      <PageHeader eyebrow="Forecast" title="Cash forecast" description={`Projection from ${date(forecast.referenceDate)}: real balance + unpaid invoices at their due date − approved expenses at their date.`} />
+      <PageHeader title="Forecast"
+        description={`Starting from ${date(forecast.referenceDate)}: today's real balance, plus unpaid invoices on their due date, minus approved expenses on their planned date.`} />
+
       <div className="grid-stats">
-        <Stat label="Today (real)" value={money(today?.balanceMillimes ?? 0)} />
+        <Stat label="Today, real" value={money(today?.balanceMillimes ?? 0)} tone={(today?.balanceMillimes ?? 0) < 0 ? "danger" : "default"} />
         {horizons.map((point, index) => (
-          <Stat key={point.date} label={`+${(index + 1) * 30} days`} value={money(point.balanceMillimes)} note={date(point.date)} tone={point.balanceMillimes < 0 ? "danger" : "success"} />
+          <Stat key={point.date} label={`In ${(index + 1) * 30} days`} value={money(point.balanceMillimes)} note={date(point.date)} tone={point.balanceMillimes < 0 ? "danger" : "success"} />
         ))}
       </div>
 
@@ -30,20 +32,20 @@ export default async function ForecastPage() {
           ? <p className="notice notice-ok">The balance stays positive for the next 90 days.</p>
           : forecast.shortageWindows.map((window) => (
             <p key={window.start} className="notice notice-danger">
-              Shortage from {date(window.start)} to {date(window.end)}: lowest {money(window.minimumMillimes)} on {date(window.minimumDate)}.
+              Cash runs short from {date(window.start)} to {date(window.end)}. The lowest point is {money(window.minimumMillimes)} on {date(window.minimumDate)}.
             </p>
           ))}
       </Card>
 
       <div className="grid-2 mt-24">
-        <Card title="Expected receipts">
+        <Card title="Money expected in">
           {forecast.receipts.length === 0
-            ? <EmptyState title="Nothing expected" text="Validated invoices with an unpaid amount appear here at their due date." />
+            ? <EmptyState title="Nothing expected" text="Validated invoices with an amount still to pay show up here on their due date." />
             : <InputsTable rows={forecast.receipts} sign={1} />}
         </Card>
-        <Card title="Planned payments">
+        <Card title="Money planned out">
           {forecast.disbursements.length === 0
-            ? <EmptyState title="Nothing planned" text="Approved expenses not yet paid appear here at their date." />
+            ? <EmptyState title="Nothing planned" text="Approved expenses that are not paid yet show up here on their planned date." />
             : <InputsTable rows={forecast.disbursements} sign={-1} />}
         </Card>
       </div>

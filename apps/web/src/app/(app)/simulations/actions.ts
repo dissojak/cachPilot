@@ -36,6 +36,23 @@ export async function addHypothesisAction(_: ActionResult | null, formData: Form
   });
 }
 
+export async function updateHypothesisAction(_: ActionResult | null, formData: FormData) {
+  const actor = await requireActor();
+  const indexed = z.object({ index: z.coerce.number().int().min(0) });
+  return runAction(
+    z.intersection(hypothesisSchema, indexed),
+    formData,
+    async (input) => {
+      const hypothesis = input.type === "client_delay"
+        ? { type: input.type, invoiceId: input.invoiceId, delayDays: input.delayDays }
+        : { type: input.type, amountMillimes: input.amount, date: input.date, label: input.label };
+      await useCases.updateHypothesis.execute({ userId: actor.userId, companyId: actor.companyId, scenarioId: input.scenarioId, index: input.index, hypothesis });
+      revalidatePath(`/simulations/${input.scenarioId}`);
+      return "Hypothesis updated. The real data did not change.";
+    },
+  );
+}
+
 export async function removeHypothesisAction(_: ActionResult | null, formData: FormData) {
   const actor = await requireActor();
   return runAction(z.object({ scenarioId: fields.id, index: z.coerce.number().int().min(0) }), formData, async (input) => {

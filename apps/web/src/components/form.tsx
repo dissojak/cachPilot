@@ -62,9 +62,9 @@ export function Field({ label, name, hint, id: givenId, ...input }: FieldProps) 
 
 type SelectProps = { label: string; name: string; options: { value: string; label: string }[] } & SelectHTMLAttributes<HTMLSelectElement>;
 
-export function SelectField({ label, name, options, ...select }: SelectProps) {
+export function SelectField({ label, name, options, id: givenId, ...select }: SelectProps) {
   const error = useContext(FieldErrors)[name]?.[0];
-  const id = `field-${name}`;
+  const id = givenId ?? `field-${name}`;
   return (
     <div className="field" data-invalid={error ? "true" : undefined}>
       <label htmlFor={id}>{label}</label>

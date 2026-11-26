@@ -1,5 +1,5 @@
 import { CompanyId, ScenarioId, ScenarioEngine, DomainError, DOMAIN_ERROR_CODES } from "@cashpilot/domain";
-import type { Hypothesis } from "@cashpilot/domain";
+import type { Hypothesis, Invoice } from "@cashpilot/domain";
 import type { ScenarioRepository } from "../ports/scenario-repository";
 import type { MembershipRepository } from "../ports/membership-repository";
 import { authorize } from "../access/authorize";
@@ -30,11 +30,11 @@ export class RunSimulation {
     const { inputs, invoices } = await this.loader.load(input.companyId, scenario.baseReferenceDate);
     const base = describeForecast(inputs);
     const simulated = describeForecast(ScenarioEngine.apply(inputs, scenario.hypotheses));
-    const invoiceNumbers = new Map(invoices.map((invoice) => [invoice.id.value, invoice.number.value]));
+    const invoicesById = new Map(invoices.map((invoice) => [invoice.id.value, invoice]));
 
     return {
       scenario: scenario.snapshot(),
-      hypotheses: scenario.hypotheses.map((hypothesis) => describeHypothesis(hypothesis, invoiceNumbers)),
+      hypotheses: scenario.hypotheses.map((hypothesis) => describeHypothesis(hypothesis, invoicesById)),
       base,
       simulated,
       comparison: base.horizons.map((point, index) => {
@@ -50,11 +50,33 @@ export class RunSimulation {
   }
 }
 
-function describeHypothesis(hypothesis: Hypothesis, invoiceNumbers: Map<string, string>) {
+/** What the presentation needs to list a hypothesis by date; amount and date stay raw (formatted by the UI). */
+export interface HypothesisView {
+  type: Hypothesis["type"];
+  label: string;
+  invoiceId?: string;
+  delayDays?: number;
+  amountMillimes?: number;
+  date?: string;
+  /** Client delay only: the due date before the delay. */
+  originalDate?: string;
+}
+
+function describeHypothesis(hypothesis: Hypothesis, invoicesById: Map<string, Invoice>): HypothesisView {
   if (hypothesis.type === "client_delay") {
-    const number = invoiceNumbers.get(hypothesis.invoiceId) ?? hypothesis.invoiceId;
-    return { type: hypothesis.type, label: `Invoice ${number} paid ${hypothesis.delayDays} days late` };
+    const invoice = invoicesById.get(hypothesis.invoiceId);
+    const number = invoice?.number.value ?? hypothesis.invoiceId;
+    return {
+      type: hypothesis.type,
+      label: `Invoice ${number} paid ${hypothesis.delayDays} days late`,
+      invoiceId: hypothesis.invoiceId,
+      delayDays: hypothesis.delayDays,
+      ...(invoice && {
+        amountMillimes: invoice.remaining.amount,
+        date: invoice.dueDate.addDays(hypothesis.delayDays).value,
+        originalDate: invoice.dueDate.value,
+      }),
+    };
   }
-  // amount and date stay raw: the presentation formats them
   return { type: hypothesis.type, label: hypothesis.label, amountMillimes: hypothesis.amount.amount, date: hypothesis.date.value };
 }

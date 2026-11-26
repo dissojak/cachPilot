@@ -1,4 +1,4 @@
-import { PageHeader, Card, StatusChip } from "@cashpilot/ui";
+import { PageHeader, Card, EmptyState } from "@cashpilot/ui";
 import { useCases } from "@/container";
 import { requireActor, can } from "@/lib/session";
 import { roleLabel } from "@/lib/format";
@@ -6,9 +6,9 @@ import { ActionForm, Field, SelectField, SubmitButton } from "@/components/form"
 import { inviteMemberAction, changeMemberRoleAction, removeMemberAction } from "../actions";
 
 const roles = [
-  { value: "collaborator", label: "Collaborator — submits expenses" },
-  { value: "finance_manager", label: "Finance manager — invoices, payments, forecast" },
-  { value: "owner", label: "Owner — approves expenses, manages the company" },
+  { value: "collaborator", label: "Collaborator: submits expenses" },
+  { value: "finance_manager", label: "Finance manager: invoices, payments, forecast" },
+  { value: "owner", label: "Owner: approves expenses, manages the company" },
 ];
 
 export default async function MembersPage() {
@@ -18,40 +18,47 @@ export default async function MembersPage() {
 
   return (
     <main className="shell">
-      <PageHeader eyebrow="Settings" title="Members" description="Roles are checked on the server for every action, not only hidden in the interface." />
+      <PageHeader title="Members" description="Who can use this company, and what each person is allowed to do. Every action is checked on the server." />
       <div className="grid-2">
-        <Card title={`${members.length} member${members.length === 1 ? "" : "s"}`}>
-          <div className="list">
-            {members.map((member) => (
-              <div key={member.userId} className="alert-item accent-pine member-row">
-                <div className="row-between">
-                  <div><strong>{member.name}{member.userId === actor.userId ? " (you)" : ""}</strong><small className="muted">{member.email}</small></div>
-                  <StatusChip status={member.role === "owner" ? "active" : member.role === "finance_manager" ? "validated" : "draft"} label={roleLabel[member.role] ?? member.role} />
-                </div>
-                {manage && (
-                  <div className="actions-row">
-                    <ActionForm action={changeMemberRoleAction} className="form-row">
-                      <input type="hidden" name="memberUserId" value={member.userId} />
-                      <SelectField label="Role" name="role" defaultValue={member.role} options={roles.map((role) => ({ value: role.value, label: roleLabel[role.value] ?? role.value }))} />
-                      <SubmitButton variant="secondary" small>Change role</SubmitButton>
-                    </ActionForm>
-                    <ActionForm action={removeMemberAction} className="inline-form">
-                      <input type="hidden" name="memberUserId" value={member.userId} />
-                      <SubmitButton variant="danger" small>Remove</SubmitButton>
-                    </ActionForm>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+        <Card title={`${members.length} ${members.length === 1 ? "member" : "members"}`}>
+          {members.length === 0
+            ? <EmptyState title="No member" text="Add the people who work on this company." />
+            : (
+              <ul className="list plain-list">
+                {members.map((member) => (
+                  <li key={member.userId} className="member-item">
+                    <div className="row-between">
+                      <div>
+                        <strong>{member.name}{member.userId === actor.userId ? " (you)" : ""}</strong>
+                        <small className="muted member-email">{member.email}</small>
+                      </div>
+                      <span className={`role-pill role-pill-${member.role}`}>{roleLabel[member.role] ?? member.role}</span>
+                    </div>
+                    {manage && member.userId !== actor.userId && (
+                      <div className="member-actions">
+                        <ActionForm action={changeMemberRoleAction} className="member-role-form">
+                          <input type="hidden" name="memberUserId" value={member.userId} />
+                          <SelectField label="Role" name="role" defaultValue={member.role} options={roles.map((role) => ({ value: role.value, label: roleLabel[role.value] ?? role.value }))} />
+                          <SubmitButton variant="secondary" small>Save role</SubmitButton>
+                        </ActionForm>
+                        <ActionForm action={removeMemberAction} className="inline-form">
+                          <input type="hidden" name="memberUserId" value={member.userId} />
+                          <SubmitButton variant="danger" small>Remove</SubmitButton>
+                        </ActionForm>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
         </Card>
         {manage && (
           <Card title="Add a member">
-            <p className="muted">The person must sign in to CashPilot once with Google; then add their e-mail here.</p>
-            <ActionForm action={inviteMemberAction} resetOnSuccess>
+            <p className="muted page-lead">The person must sign in to CashPilot once with Google first. Then add the same e-mail here.</p>
+            <ActionForm action={inviteMemberAction} resetOnSuccess className="form">
               <Field label="E-mail" name="email" type="email" required />
               <SelectField label="Role" name="role" options={roles} />
-              <SubmitButton>Add member</SubmitButton>
+              <div className="form-footer"><SubmitButton>Add member</SubmitButton></div>
             </ActionForm>
           </Card>
         )}

@@ -14,9 +14,8 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
   return (
     <main className="shell">
       <PageHeader
-        eyebrow="Alerts"
-        title="What needs attention"
-        description="Overdue invoices, expenses waiting for approval and forecast shortages, most urgent first."
+        title="Attention"
+        description="Overdue invoices, expenses waiting for a decision and cash shortages, most urgent first."
       />
 
       <nav className="filters" aria-label="Filter alerts">
@@ -31,15 +30,15 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         })}
       </nav>
 
-      <Card title={`${alerts.length} ${alerts.length === 1 ? "alert" : "alerts"}`}>
+      <Card title={`${alerts.length} ${alerts.length === 1 ? "item" : "items"}`}>
         {alerts.length === 0
-          ? <EmptyState title="All clear" text="No overdue invoice, no expense waiting and the forecast stays above your threshold." />
+          ? <EmptyState title="Nothing needs you" text="No invoice is overdue, no expense is waiting and the forecast stays above your threshold." />
           : (
             <ul className="list plain-list">
               {alerts.map((alert) => (
                 <li key={`${alert.type}-${alert.entityId}-${alert.date ?? ""}`}>
                   <Link href={alertHref(alert)} className={`alert-item${alertTone[alert.type] === "danger" ? " danger" : ""}`}>
-                    <small className="mono">{alertTypeLabel[alert.type]}</small>
+                    <small className="muted">{alertTypeLabel[alert.type]}</small>
                     <strong>{alert.message}</strong>
                     {alert.date && <small className="muted">{date(alert.date)}</small>}
                   </Link>

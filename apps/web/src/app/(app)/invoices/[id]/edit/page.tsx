@@ -15,8 +15,10 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
   if (invoice.status !== "draft") redirect(`/invoices/${id}`);
   return (
     <main className="shell width-form">
-      <PageHeader eyebrow={`Invoice ${invoice.number}`} title="Edit draft" />
-      <Card><InvoiceForm action={updateInvoiceDraftAction} customers={customers} draft={invoice} submitLabel="Save draft" /></Card>
+      <PageHeader title={`Edit draft ${invoice.number}`} description="Changes are saved to the draft. Validating it afterwards is a separate step." />
+      <Card>
+        <InvoiceForm action={updateInvoiceDraftAction} customers={customers} draft={invoice} submitLabel="Save draft" cancelHref={`/invoices/${id}`} />
+      </Card>
     </main>
   );
 }

@@ -9,8 +9,10 @@ export default async function NewInvoicePage() {
   const customers = await useCases.listParties.execute({ ...actor, type: "customer" });
   return (
     <main className="shell width-form">
-      <PageHeader eyebrow="Invoices" title="New invoice" />
-      <Card><InvoiceForm action={createInvoiceDraftAction} customers={customers} submitLabel="Create draft" /></Card>
+      <PageHeader title="New invoice" description="Start with a draft. You can still change it until you validate it." />
+      <Card>
+        <InvoiceForm action={createInvoiceDraftAction} customers={customers} submitLabel="Create draft" cancelHref="/invoices" />
+      </Card>
     </main>
   );
 }

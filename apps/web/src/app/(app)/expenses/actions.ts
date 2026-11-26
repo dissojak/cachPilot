@@ -33,6 +33,19 @@ export async function submitExpenseAction(_: ActionResult | null, formData: Form
   });
 }
 
+export async function updateExpenseAction(_: ActionResult | null, formData: FormData) {
+  const actor = await requireActor();
+  const schema = z.object({ expenseId: fields.id, category: fields.text, description: fields.text, amount: fields.amount, expenseDate: fields.date });
+  return runAction(schema, formData, async (input) => {
+    await useCases.updateSubmittedExpense.execute({
+      userId: actor.userId, companyId: actor.companyId, expenseId: input.expenseId, category: input.category,
+      description: input.description, amountMillimes: input.amount, expenseDate: input.expenseDate,
+    });
+    refresh(input.expenseId);
+    redirect(`/expenses/${input.expenseId}`);
+  });
+}
+
 export async function attachReceiptAction(_: ActionResult | null, formData: FormData) {
   const actor = await requireActor();
   const receipt = formData.get("receipt");
